@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "watsonx-orchestrate-adk-docs": {
+      "command": "uvx",
+      "args": [
+        "mcp-proxy",
+        "--transport",
+        "streamablehttp",
+        "https://developer.watson-orchestrate.ibm.com/mcp"
+      ]
+    },
+    "watsonx-orchestrate-adk": {
+      "command": "uvx",
+      "args": [
+        "--with",
+        "ibm-watsonx-orchestrate==2.11.0\r",
+        "ibm-watsonx-orchestrate-mcp-server==2.11.0\r"
+      ],
+      "env": {
+        "WXO_MCP_WORKING_DIRECTORY": "c:\\Users\\i.fricon\\Documents\\IBM\\bobchestrate-ws",
+        "WXO_MCP_DEBUG": ""
+      },
+      "timeout": 300
+    }
+  }
+}

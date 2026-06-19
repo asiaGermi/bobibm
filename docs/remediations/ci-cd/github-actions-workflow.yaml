@@ -1,0 +1,285 @@
+# GitHub Actions Workflow for IBM Cloud Deployment
+# Place this file in: .github/workflows/deploy-ibm-cloud.yml
+
+name: Deploy to IBM Cloud
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  IBM_CLOUD_REGION: us-south
+  IBM_CLOUD_RESOURCE_GROUP: aml-compliance-rg
+  CLUSTER_NAME: aml-compliance-cluster
+  REGISTRY: icr.io
+  REGISTRY_NAMESPACE: aml-namespace
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          cd 20-codebase
+          pip install -r requirements.txt
+          pip install pytest pytest-cov flake8
+      
+      - name: Run linting
+        run: |
+          cd 20-codebase
+          flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      
+      - name: Run tests
+        run: |
+          cd 20-codebase
+          pytest tests/ --cov=src --cov-report=xml --cov-report=html
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./20-codebase/coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+
+  build-images:
+    name: Build Docker Images
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to IBM Cloud Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: iamapikey
+          password: ${{ secrets.IBM_CLOUD_API_KEY }}
+      
+      - name: Extract metadata for API Gateway
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/aml-api-gateway
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push API Gateway image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./50-remediations/Dockerfile.api
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Extract metadata for Agents
+        id: meta-agents
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/aml-agents
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+      
+      - name: Build and push Agents image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./50-remediations/Dockerfile.agents
+          push: true
+          tags: ${{ steps.meta-agents.outputs.tags }}
+          labels: ${{ steps.meta-agents.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build-images
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment:
+      name: staging
+      url: http://${{ steps.get-endpoint.outputs.endpoint }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install IBM Cloud CLI
+        run: |
+          curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+          ibmcloud plugin install kubernetes-service
+          ibmcloud plugin install container-registry
+      
+      - name: Authenticate with IBM Cloud
+        run: |
+          ibmcloud login --apikey ${{ secrets.IBM_CLOUD_API_KEY }} -r ${{ env.IBM_CLOUD_REGION }} -g ${{ env.IBM_CLOUD_RESOURCE_GROUP }}
+          ibmcloud ks cluster config --cluster ${{ env.CLUSTER_NAME }}
+      
+      - name: Deploy to Kubernetes
+        run: |
+          cd 50-remediations
+          
+          # Apply namespace
+          kubectl apply -f kubernetes/namespace.yaml
+          
+          # Apply ConfigMaps
+          kubectl apply -f kubernetes/configmap.yaml
+          
+          # Apply Secrets (from GitHub Secrets)
+          kubectl create secret generic aml-secrets \
+            --from-literal=jwt_secret=${{ secrets.JWT_SECRET }} \
+            --from-literal=ibm_cloud_api_key=${{ secrets.IBM_CLOUD_API_KEY }} \
+            --from-literal=watsonx_api_key=${{ secrets.WATSONX_API_KEY }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Apply PVCs
+          kubectl apply -f kubernetes/pvc.yaml
+          
+          # Apply Deployments
+          kubectl apply -f kubernetes/deployment-api.yaml
+          kubectl apply -f kubernetes/deployment-agents.yaml
+          
+          # Apply Services
+          kubectl apply -f kubernetes/service-api.yaml
+          
+          # Apply HPA
+          kubectl apply -f kubernetes/hpa.yaml
+      
+      - name: Wait for deployment
+        run: |
+          kubectl rollout status deployment/aml-api-gateway -n aml-compliance --timeout=5m
+          kubectl rollout status deployment/aml-agents -n aml-compliance --timeout=5m
+      
+      - name: Get service endpoint
+        id: get-endpoint
+        run: |
+          ENDPOINT=$(kubectl get service aml-api-gateway -n aml-compliance -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          if [ -z "$ENDPOINT" ]; then
+            ENDPOINT=$(kubectl get service aml-api-gateway -n aml-compliance -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          fi
+          echo "endpoint=$ENDPOINT" >> $GITHUB_OUTPUT
+          echo "API Gateway Endpoint: http://$ENDPOINT"
+      
+      - name: Run smoke tests
+        run: |
+          ENDPOINT=${{ steps.get-endpoint.outputs.endpoint }}
+          curl -f http://$ENDPOINT/health || exit 1
+          echo "Smoke tests passed!"
+
+  deploy-production:
+    name: Deploy to Production
+    needs: build-images
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+      url: http://${{ steps.get-endpoint.outputs.endpoint }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install IBM Cloud CLI
+        run: |
+          curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+          ibmcloud plugin install kubernetes-service
+          ibmcloud plugin install container-registry
+      
+      - name: Authenticate with IBM Cloud
+        run: |
+          ibmcloud login --apikey ${{ secrets.IBM_CLOUD_API_KEY }} -r ${{ env.IBM_CLOUD_REGION }} -g ${{ env.IBM_CLOUD_RESOURCE_GROUP }}
+          ibmcloud ks cluster config --cluster ${{ env.CLUSTER_NAME }}
+      
+      - name: Deploy to Kubernetes
+        run: |
+          cd 50-remediations
+          kubectl apply -f kubernetes/namespace.yaml
+          kubectl apply -f kubernetes/configmap.yaml
+          kubectl create secret generic aml-secrets \
+            --from-literal=jwt_secret=${{ secrets.JWT_SECRET }} \
+            --from-literal=ibm_cloud_api_key=${{ secrets.IBM_CLOUD_API_KEY }} \
+            --from-literal=watsonx_api_key=${{ secrets.WATSONX_API_KEY }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -f kubernetes/pvc.yaml
+          kubectl apply -f kubernetes/deployment-api.yaml
+          kubectl apply -f kubernetes/deployment-agents.yaml
+          kubectl apply -f kubernetes/service-api.yaml
+          kubectl apply -f kubernetes/hpa.yaml
+      
+      - name: Wait for deployment
+        run: |
+          kubectl rollout status deployment/aml-api-gateway -n aml-compliance --timeout=10m
+          kubectl rollout status deployment/aml-agents -n aml-compliance --timeout=10m
+      
+      - name: Get service endpoint
+        id: get-endpoint
+        run: |
+          ENDPOINT=$(kubectl get service aml-api-gateway -n aml-compliance -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          if [ -z "$ENDPOINT" ]; then
+            ENDPOINT=$(kubectl get service aml-api-gateway -n aml-compliance -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+          fi
+          echo "endpoint=$ENDPOINT" >> $GITHUB_OUTPUT
+          echo "Production API Gateway: http://$ENDPOINT"
+      
+      - name: Run production smoke tests
+        run: |
+          ENDPOINT=${{ steps.get-endpoint.outputs.endpoint }}
+          curl -f http://$ENDPOINT/health || exit 1
+          curl -f http://$ENDPOINT/ready || exit 1
+          echo "Production smoke tests passed!"
+      
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "✅ Production deployment successful!"
+          echo "API Endpoint: http://${{ steps.get-endpoint.outputs.endpoint }}"
+
+# Made with Bob

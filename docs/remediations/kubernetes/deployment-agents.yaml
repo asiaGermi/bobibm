@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aml-agents
+  namespace: aml-compliance
+  labels:
+    app: aml-agents
+    component: agents
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: aml-agents
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: aml-agents
+        component: agents
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      serviceAccountName: aml-agents-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: agents
+        image: icr.io/aml-namespace/aml-agents:latest
+        imagePullPolicy: Always
+        ports:
+        - name: metrics
+          containerPort: 9090
+          protocol: TCP
+        env:
+        - name: OLLAMA_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aml-config
+              key: ollama_base_url
+        - name: LLM_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: aml-config
+              key: llm_model
+        - name: EMBEDDING_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: aml-config
+              key: embedding_model
+        - name: VECTOR_DB_DIR
+          value: "/app/data/vector_db"
+        - name: IBM_SYNTHETIC_DATA_PATH
+          value: "/app/data/ibm_datasets"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        - name: vector-db
+          mountPath: /app/data/vector_db
+        - name: ibm-datasets
+          mountPath: /app/data/ibm_datasets
+          readOnly: true
+        - name: cache
+          mountPath: /app/cache
+      volumes:
+      - name: config
+        configMap:
+          name: aml-config
+      - name: vector-db
+        persistentVolumeClaim:
+          claimName: aml-vector-db-pvc
+      - name: ibm-datasets
+        persistentVolumeClaim:
+          claimName: aml-ibm-datasets-pvc
+      - name: cache
+        emptyDir:
+          sizeLimit: 2Gi
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - aml-agents
+              topologyKey: kubernetes.io/hostname
+
+# Made with Bob

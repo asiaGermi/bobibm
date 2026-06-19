@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aml-config
+  namespace: aml-compliance
+  labels:
+    app: aml-compliance
+data:
+  # LLM Configuration
+  ollama_base_url: "http://ollama-service:11434"
+  llm_model: "mistral"
+  embedding_model: "intfloat/multilingual-e5-large"
+  
+  # API Configuration
+  api_host: "0.0.0.0"
+  api_port: "8000"
+  api_workers: "4"
+  api_timeout: "300"
+  
+  # Database Configuration
+  vector_db_dir: "/app/data/vector_db"
+  internal_policy_dir: "/app/data/normativa_interna"
+  
+  # IBM Synthetic Data Sets Configuration
+  ibm_datasets_path: "/app/data/ibm_datasets"
+  bank_xfers_file: "bank_xfers.csv"
+  banks_file: "banks.csv"
+  accounts_people_file: "liquid_accts_people.csv"
+  accounts_companies_file: "liquid_accts_companies.csv"
+  b2b_file: "b2b.csv"
+  
+  # Crawler Configuration
+  crawl_delay_default: "2"
+  user_agent: "Mozilla/5.0 (compatible; AML-Compliance-Bot/1.0)"
+  
+  # Domain Crawl Delays
+  domains_crawl_delay: |
+    bancaditalia.it: 5
+    uif.bancaditalia.it: 5
+    fatf-gafi.org: 3
+    eba.europa.eu: 2
+    ecb.europa.eu: 2
+    fiusenet.europa.eu: 5
+  
+  # Logging Configuration
+  log_level: "INFO"
+  log_format: "json"
+  
+  # Monitoring Configuration
+  metrics_enabled: "true"
+  metrics_port: "9090"
+  
+  # Feature Flags
+  enable_caching: "true"
+  enable_rate_limiting: "true"
+  enable_authentication: "true"
+  
+  # Performance Tuning
+  max_concurrent_requests: "100"
+  request_timeout_seconds: "300"
+  cache_ttl_seconds: "3600"
+
+# Made with Bob

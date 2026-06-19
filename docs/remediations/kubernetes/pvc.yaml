@@ -1,0 +1,54 @@
+# PersistentVolumeClaim for Vector Database
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aml-vector-db-pvc
+  namespace: aml-compliance
+  labels:
+    app: aml-compliance
+    component: storage
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ibmc-file-gold
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# PersistentVolumeClaim for IBM Synthetic Datasets
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aml-ibm-datasets-pvc
+  namespace: aml-compliance
+  labels:
+    app: aml-compliance
+    component: storage
+spec:
+  accessModes:
+    - ReadOnlyMany
+  storageClassName: ibmc-file-gold
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+# PersistentVolumeClaim for Internal Policies
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: aml-policies-pvc
+  namespace: aml-compliance
+  labels:
+    app: aml-compliance
+    component: storage
+spec:
+  accessModes:
+    - ReadOnlyMany
+  storageClassName: ibmc-file-gold
+  resources:
+    requests:
+      storage: 5Gi
+
+# Made with Bob

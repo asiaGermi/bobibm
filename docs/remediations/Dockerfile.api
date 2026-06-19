@@ -1,0 +1,68 @@
+# Dockerfile for API Gateway (FastAPI)
+# Multi-stage build for optimized image size
+
+# Stage 1: Builder
+FROM python:3.11-slim as builder
+
+WORKDIR /build
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY 20-codebase/requirements.txt .
+
+# Add FastAPI and related dependencies
+RUN echo "fastapi>=0.104.0" >> requirements.txt && \
+    echo "uvicorn[standard]>=0.24.0" >> requirements.txt && \
+    echo "pydantic>=2.5.0" >> requirements.txt && \
+    echo "python-jose[cryptography]>=3.3.0" >> requirements.txt && \
+    echo "python-multipart>=0.0.6" >> requirements.txt && \
+    echo "slowapi>=0.1.9" >> requirements.txt
+
+# Create virtual environment and install dependencies
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Stage 2: Runtime
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy application code
+COPY 20-codebase/api ./api
+COPY 20-codebase/src ./src
+COPY 20-codebase/config ./config
+COPY 20-codebase/data ./data
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV API_HOST=0.0.0.0
+ENV API_PORT=8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8000/health')"
+
+# Expose API port
+EXPOSE 8000
+
+# Run FastAPI with uvicorn
+CMD ["uvicorn", "api.src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+
+# Made with Bob

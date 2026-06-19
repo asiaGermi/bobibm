@@ -1,0 +1,15 @@
+# Namespace for AML Compliance Application
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aml-compliance
+  labels:
+    name: aml-compliance
+    environment: production
+    project: ibm-cloud-challenge
+  annotations:
+    description: "AML Compliance Multi-Agent Application"
+    owner: "compliance-team"
+    cost-center: "aml-operations"
+
+# Made with Bob
