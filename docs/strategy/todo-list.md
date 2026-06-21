@@ -6,12 +6,12 @@ This checklist tracks the implementation progress of the containerized agentic a
 ---
 
 ## Phase 1: Analysis and Design
-- [ ] **Analisi e Design - Definire architettura sistema agentico**
-  - [ ] Review mandate requirements in detail
-  - [ ] Define system architecture and component interactions
-  - [ ] Create detailed technical specifications
-  - [ ] Design data flow diagrams
-  - [ ] Define agent responsibilities and interfaces
+- [x] **Analisi e Design - Definire architettura sistema agentico**
+  - [x] Review mandate requirements in detail
+  - [x] Define system architecture and component interactions
+  - [x] Create detailed technical specifications
+  - [x] Design data flow diagrams
+  - [x] Define agent responsibilities and interfaces
   - [ ] Document API contracts and schemas
 
 ---
@@ -27,19 +27,26 @@ This checklist tracks the implementation progress of the containerized agentic a
   - [ ] Create watsonx Orchestrate instance
   - [ ] Configure VPC and network security groups
   - [ ] Set up development and staging environments
+  - [x] Install and configure IBM Bob CLI with custom mode `wxo-agent-architect`
+  - [x] Initialize git repository and project directory structure
+  - [x] Configure `requirements.txt` with core dependencies
+  - [x] Configure `workspace_config.yaml` for watsonx
 
 ---
 
 ## Phase 3: Data Layer
 - [ ] **Data Layer - Integrare IBM Synthetic Data Sets**
-  - [ ] Identify required synthetic datasets
-  - [ ] Configure data access credentials
-  - [ ] Implement data ingestion service
+  - [x] Identify required synthetic datasets
+  - [x] Configure data access credentials
+  - [x] Implement data ingestion service (`src/data/loader.py` — LRU cache, query per account/banca/transazione)
   - [ ] Create data validation layer
   - [ ] Develop data transformation pipelines
   - [ ] Set up Redis caching layer
-  - [ ] Test data quality and consistency
-  - [ ] Document data schemas and formats
+  - [x] Test data quality and consistency (`src/data/test_data_layer.py` — 12 test cases)
+  - [x] Document data schemas and formats
+  - [x] Implement risk scoring 0.0-1.0 con 5 fattori ponderati (`src/data/analyzer.py`)
+  - [x] Implement AML pattern detection (fan-out, fan-in, circular, smurfing)
+  - [x] Implement temporal anomaly detection
 
 ---
 
@@ -47,33 +54,42 @@ This checklist tracks the implementation progress of the containerized agentic a
 
 ### Transaction Analysis Agent
 - [ ] **Agent Development - Implementare Transaction Analysis Agent**
-  - [ ] Set up Python project structure
-  - [ ] Implement transaction data parsing
-  - [ ] Develop pattern detection algorithms
-  - [ ] Create anomaly detection logic
-  - [ ] Implement insight generation
+  - [x] Set up Python project structure
+  - [x] Implement transaction data parsing (`src/data/loader.py`)
+  - [x] Develop pattern detection algorithms (`src/data/analyzer.py` — detect_aml_patterns)
+  - [x] Create anomaly detection logic (`src/data/analyzer.py` — detect_temporal_anomalies)
+  - [ ] Implement agent class `src/agents/transaction_analysis_agent.py`
   - [ ] Write unit tests
   - [ ] Create Dockerfile
   - [ ] Document agent API and functionality
 
 ### Risk Assessment Agent
 - [ ] **Agent Development - Implementare Risk Assessment Agent**
-  - [ ] Set up Python project structure
-  - [ ] Implement risk scoring algorithms
-  - [ ] Develop risk model evaluation
-  - [ ] Create operational profile analysis
-  - [ ] Implement risk report generation
+  - [x] Set up Python project structure
+  - [x] Implement risk scoring algorithms (`src/data/analyzer.py` — calculate_risk_score)
+  - [x] Develop risk model evaluation (5 fattori ponderati)
+  - [x] Create operational profile analysis (`src/data/analyzer.py` — get_account_summary)
+  - [ ] Implement agent class `src/agents/risk_assessment_agent.py`
   - [ ] Write unit tests
   - [ ] Create Dockerfile
   - [ ] Document agent API and functionality
 
 ### Recommendation Agent
 - [ ] **Agent Development - Implementare Recommendation Agent**
-  - [ ] Set up Python project structure
-  - [ ] Implement recommendation engine
-  - [ ] Develop prioritization logic
+  - [x] Set up Python project structure
+  - [ ] Implement agent class `src/agents/recommendation_agent.py`
+  - [ ] Develop prioritization logic (ALERT / REVIEW / BLOCK / MONITOR)
   - [ ] Create action templates
   - [ ] Implement output formatting
+  - [ ] Write unit tests
+  - [ ] Create Dockerfile
+  - [ ] Document agent API and functionality
+
+### Fraud Detection Agent (aggiunto)
+- [ ] **Agent Development - Implementare Fraud Detection Agent**
+  - [x] Set up Python project structure
+  - [x] Implement fraud signals via laundering history nel dataset
+  - [ ] Implement agent class `src/agents/fraud_detection_agent.py`
   - [ ] Write unit tests
   - [ ] Create Dockerfile
   - [ ] Document agent API and functionality
@@ -201,16 +217,16 @@ This checklist tracks the implementation progress of the containerized agentic a
 
 | Phase | Status | Start Date | End Date | Notes |
 |-------|--------|------------|----------|-------|
-| Phase 1: Analysis and Design | Pending | - | - | - |
-| Phase 2: Environment Setup | Pending | - | - | - |
-| Phase 3: Data Layer | Pending | - | - | - |
-| Phase 4: Agent Development | Pending | - | - | - |
-| Phase 5: Orchestration | Pending | - | - | - |
-| Phase 6: API Layer | Pending | - | - | - |
-| Phase 7: Containerization | Pending | - | - | - |
-| Phase 8: Deployment | Pending | - | - | - |
-| Phase 9: Testing | Pending | - | - | - |
-| Phase 10: Documentation | Pending | - | - | - |
+| Phase 1: Analysis and Design | ✅ Quasi completo | 16 giu | 21 giu | Manca solo API contract |
+| Phase 2: Environment Setup | 🔄 In corso | 16 giu | - | Bob + repo ok, IBM Cloud credentials mancano |
+| Phase 3: Data Layer | ✅ Quasi completo | 18 giu | 21 giu | loader + analyzer + test completati |
+| Phase 4: Agent Development | ❌ Non iniziato | - | - | Logiche pronte in analyzer.py, agenti da creare |
+| Phase 5: Orchestration | ❌ Non iniziato | - | - | |
+| Phase 6: API Layer | ❌ Non iniziato | - | - | |
+| Phase 7: Containerization | ❌ Non iniziato | - | - | |
+| Phase 8: Deployment | ❌ Non iniziato | - | - | |
+| Phase 9: Testing | 🔄 Parziale | 20 giu | - | Solo data layer testato |
+| Phase 10: Documentation | 🔄 In corso | 16 giu | - | Gap analysis, strategy, spec-driven ok |
 
 ---
 

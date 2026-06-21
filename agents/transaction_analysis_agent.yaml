@@ -1,0 +1,116 @@
+# watsonx Orchestrate Skill Definition
+# Transaction Analysis Agent for Financial Risk Management
+
+apiVersion: wxo.ibm.com/v1
+kind: Skill
+metadata:
+  name: transaction-analysis-agent
+  displayName: Transaction Analysis Agent
+  description: Analyzes transaction patterns and detects AML patterns for financial accounts
+  version: 1.0.0
+  tags:
+    - financial-risk
+    - aml-detection
+    - transaction-analysis
+
+spec:
+  # REST API endpoint configuration
+  endpoint:
+    type: rest
+    url: ${API_BASE_URL}/api/v1/analyze/transaction
+    method: POST
+    headers:
+      Content-Type: application/json
+    authentication:
+      type: none  # Add JWT when implemented
+  
+  # Input schema (matches TransactionAnalysisRequest in src/api/models.py)
+  input:
+    type: object
+    required:
+      - account_id
+      - timestamp
+    properties:
+      account_id:
+        type: string
+        description: Account ID to analyze
+        example: "8000EBD30"
+      timestamp:
+        type: string
+        description: Transaction timestamp in ISO format or 'YYYY/MM/DD HH:MM'
+        example: "2022/09/01 00:20"
+      lookback_days:
+        type: integer
+        description: Number of days to look back for historical analysis
+        default: 30
+        minimum: 1
+        maximum: 365
+  
+  # Output schema (matches TransactionAnalysisResponse in src/api/models.py)
+  output:
+    type: object
+    properties:
+      account_id:
+        type: string
+        description: Account ID analyzed
+      timestamp:
+        type: string
+        description: Transaction timestamp
+      transaction_found:
+        type: boolean
+        description: Whether transaction was found
+      transaction:
+        type: object
+        description: Transaction details
+        properties:
+          timestamp:
+            type: string
+          from_bank:
+            type: string
+          from_account:
+            type: string
+          to_bank:
+            type: string
+          to_account:
+            type: string
+          amount_received:
+            type: number
+          receiving_currency:
+            type: string
+          amount_paid:
+            type: number
+          payment_currency:
+            type: string
+          payment_format:
+            type: string
+          is_laundering:
+            type: integer
+      anomaly_detection:
+        type: object
+        description: Anomaly detection results
+        properties:
+          is_anomalous:
+            type: boolean
+          anomaly_score:
+            type: number
+            minimum: 0.0
+            maximum: 1.0
+          anomaly_types:
+            type: array
+            items:
+              type: string
+          details:
+            type: object
+      message:
+        type: string
+        description: Status message
+  
+  # Error handling
+  errorHandling:
+    retryPolicy:
+      maxAttempts: 3
+      backoffMultiplier: 2
+      initialInterval: 1s
+    timeoutSeconds: 30
+
+# Made with Bob

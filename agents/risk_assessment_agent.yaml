@@ -1,0 +1,146 @@
+# watsonx Orchestrate Skill Definition
+# Risk Assessment Agent for Financial Risk Management
+
+apiVersion: wxo.ibm.com/v1
+kind: Skill
+metadata:
+  name: risk-assessment-agent
+  displayName: Risk Assessment Agent
+  description: Calculates comprehensive risk scores and detects AML patterns combining risk and fraud analysis
+  version: 1.0.0
+  tags:
+    - financial-risk
+    - risk-scoring
+    - aml-detection
+    - fraud-detection
+
+spec:
+  # REST API endpoint configuration
+  endpoint:
+    type: rest
+    url: ${API_BASE_URL}/api/v1/assess/risk
+    method: POST
+    headers:
+      Content-Type: application/json
+    authentication:
+      type: none  # Add JWT when implemented
+  
+  # Input schema (matches RiskAssessmentRequest in src/api/models.py)
+  input:
+    type: object
+    required:
+      - account_id
+    properties:
+      account_id:
+        type: string
+        description: Account ID to assess for risk
+        example: "8000EBD30"
+      lookback_days:
+        type: integer
+        description: Number of days to analyze for risk assessment
+        default: 90
+        minimum: 1
+        maximum: 365
+  
+  # Output schema (matches RiskAssessmentResponse in src/api/models.py)
+  output:
+    type: object
+    properties:
+      account_id:
+        type: string
+        description: Account ID assessed
+      analysis_period_days:
+        type: integer
+        description: Number of days analyzed
+      date_range:
+        type: object
+        description: Date range of analysis
+        properties:
+          start:
+            type: string
+            format: date-time
+          end:
+            type: string
+            format: date-time
+      risk_metrics:
+        type: object
+        description: Risk assessment metrics
+        properties:
+          risk_score:
+            type: number
+            description: Combined risk score (0.0-1.0)
+            minimum: 0.0
+            maximum: 1.0
+          risk_level:
+            type: string
+            description: Risk level classification
+            enum: [minimal, low, medium, high, critical]
+          aml_patterns_detected:
+            type: integer
+            description: Number of AML patterns detected
+          aml_patterns:
+            type: array
+            description: Detailed AML patterns
+            items:
+              type: object
+              properties:
+                pattern_type:
+                  type: string
+                  enum: [fan-out, fan-in, circular, smurfing]
+                severity:
+                  type: string
+                  enum: [low, medium, high, critical]
+                confidence:
+                  type: number
+                  minimum: 0.0
+                  maximum: 1.0
+                description:
+                  type: string
+                evidence:
+                  type: object
+      transaction_statistics:
+        type: object
+        description: Transaction statistics for the account
+        properties:
+          total_transactions:
+            type: integer
+          sent_count:
+            type: integer
+          received_count:
+            type: integer
+          total_sent:
+            type: number
+          total_received:
+            type: number
+          net_flow:
+            type: number
+          avg_transaction_amount:
+            type: number
+          median_transaction_amount:
+            type: number
+          std_transaction_amount:
+            type: number
+          max_transaction:
+            type: number
+          min_transaction:
+            type: number
+          laundering_count:
+            type: integer
+          laundering_percentage:
+            type: number
+          unique_counterparties:
+            type: integer
+          payment_formats:
+            type: object
+            additionalProperties:
+              type: integer
+  
+  # Error handling
+  errorHandling:
+    retryPolicy:
+      maxAttempts: 3
+      backoffMultiplier: 2
+      initialInterval: 1s
+    timeoutSeconds: 60
+
+# Made with Bob

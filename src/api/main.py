@@ -1,0 +1,631 @@
+"""
+FastAPI Application for Financial Risk Management System
+Phase 3: REST API Layer Implementation
+
+This module provides REST API endpoints for financial risk analysis,
+AML pattern detection, and risk assessment using the data layer functions.
+"""
+
+from typing import Optional
+from datetime import datetime
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic_settings import BaseSettings
+
+# Import data layer functions
+from ..data.loader import (
+    get_transaction_by_key,
+    get_dataset_info,
+    DataLoaderError,
+    DataNotFoundError,
+    InvalidTransactionKeyError
+)
+from ..data.analyzer import (
+    calculate_risk_score,
+    detect_aml_patterns,
+    detect_temporal_anomalies,
+    get_account_history,
+    AnalyzerError
+)
+
+# Import orchestrator
+from .orchestrator import AgentOrchestrator
+
+# Import API models
+from .models import (
+    TransactionAnalysisRequest,
+    TransactionAnalysisResponse,
+    TransactionDetail,
+    AnomalyDetail,
+    RiskAssessmentRequest,
+    RiskAssessmentResponse,
+    RiskMetrics,
+    TransactionStatistics,
+    AMLPattern,
+    RecommendActionsRequest,
+    RecommendActionsResponse,
+    ActionRecommendation,
+    FraudDetectionResponse,
+    HealthCheckResponse,
+    ErrorResponse
+)
+
+
+# ============================================================================
+# Configuration
+# ============================================================================
+
+class Settings(BaseSettings):
+    """Application settings using pydantic-settings."""
+    
+    app_name: str = "Financial Risk Management API"
+    app_version: str = "1.0.0"
+    api_prefix: str = "/api/v1"
+    
+    # CORS settings
+    cors_origins: list[str] = ["*"]
+    cors_allow_credentials: bool = True
+    cors_allow_methods: list[str] = ["*"]
+    cors_allow_headers: list[str] = ["*"]
+    
+    # Data settings
+    data_path: Optional[str] = None
+    
+    class Config:
+        env_prefix = "FRM_"
+        case_sensitive = False
+
+
+settings = Settings()
+
+
+# ============================================================================
+# Application Lifecycle
+# ============================================================================
+
+# Global orchestrator instance
+orchestrator = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager."""
+    global orchestrator
+    
+    # Startup
+    print(f"Starting {settings.app_name} v{settings.app_version}")
+    try:
+        # Test data layer connectivity
+        info = get_dataset_info(settings.data_path)
+        print(f"✓ Data layer connected: {info['total_transactions']} transactions loaded")
+        
+        # Initialize orchestrator
+        orchestrator = AgentOrchestrator(settings.data_path)
+        print(f"✓ Agent orchestrator initialized")
+    except Exception as e:
+        print(f"⚠ Warning: Data layer connection issue: {str(e)}")
+    
+    yield
+    
+    # Shutdown
+    print(f"Shutting down {settings.app_name}")
+
+
+# ============================================================================
+# FastAPI Application
+# ============================================================================
+
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    description="""
+    REST API for Financial Risk Management and AML Detection.
+    
+    This API provides endpoints for:
+    - Transaction analysis and anomaly detection
+    - Risk assessment and scoring
+    - AML pattern detection
+    - Action recommendations
+    
+    Built on top of IBM Synthetic Financial Data Sets.
+    """,
+    lifespan=lifespan,
+    docs_url=f"{settings.api_prefix}/docs",
+    redoc_url=f"{settings.api_prefix}/redoc",
+    openapi_url=f"{settings.api_prefix}/openapi.json"
+)
+
+
+# ============================================================================
+# CORS Middleware
+# ============================================================================
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=settings.cors_allow_credentials,
+    allow_methods=settings.cors_allow_methods,
+    allow_headers=settings.cors_allow_headers,
+)
+
+
+# ============================================================================
+# Exception Handlers
+# ============================================================================
+
+@app.exception_handler(DataNotFoundError)
+async def data_not_found_handler(request, exc: DataNotFoundError):
+    """Handle data not found errors."""
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content=ErrorResponse(
+            error="DataNotFound",
+            message=str(exc),
+            timestamp=datetime.utcnow().isoformat()
+        ).model_dump()
+    )
+
+
+@app.exception_handler(InvalidTransactionKeyError)
+async def invalid_transaction_key_handler(request, exc: InvalidTransactionKeyError):
+    """Handle invalid transaction key errors."""
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content=ErrorResponse(
+            error="InvalidTransactionKey",
+            message=str(exc),
+            timestamp=datetime.utcnow().isoformat()
+        ).model_dump()
+    )
+
+
+@app.exception_handler(DataLoaderError)
+async def data_loader_error_handler(request, exc: DataLoaderError):
+    """Handle data loader errors."""
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content=ErrorResponse(
+            error="DataLoaderError",
+            message=str(exc),
+            timestamp=datetime.utcnow().isoformat()
+        ).model_dump()
+    )
+
+
+@app.exception_handler(AnalyzerError)
+async def analyzer_error_handler(request, exc: AnalyzerError):
+    """Handle analyzer errors."""
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content=ErrorResponse(
+            error="AnalyzerError",
+            message=str(exc),
+            timestamp=datetime.utcnow().isoformat()
+        ).model_dump()
+    )
+
+
+# ============================================================================
+# API Endpoints
+# ============================================================================
+
+@app.get(
+    f"{settings.api_prefix}/health",
+    response_model=HealthCheckResponse,
+    tags=["Health"],
+    summary="Health Check",
+    description="Check API health and data layer connectivity"
+)
+async def health_check():
+    """
+    Health check endpoint.
+    
+    Returns service status, version, and data layer connectivity information.
+    """
+    try:
+        # Test data layer
+        dataset_info = get_dataset_info(settings.data_path)
+        data_status = "connected"
+    except Exception as e:
+        dataset_info = None
+        data_status = f"error: {str(e)}"
+    
+    return HealthCheckResponse(
+        status="healthy",
+        version=settings.app_version,
+        timestamp=datetime.utcnow().isoformat(),
+        data_layer_status=data_status,
+        dataset_info=dataset_info
+    )
+
+
+@app.post(
+    f"{settings.api_prefix}/analyze/transaction",
+    response_model=TransactionAnalysisResponse,
+    tags=["Analysis"],
+    summary="Analyze Transaction",
+    description="Analyze a single transaction for anomalies and risk patterns",
+    status_code=status.HTTP_200_OK
+)
+async def analyze_transaction(request: TransactionAnalysisRequest):
+    """
+    Analyze a specific transaction by account_id and timestamp using TransactionAnalysisAgent.
+    
+    This endpoint:
+    1. Uses TransactionAnalysisAgent to analyze transaction patterns
+    2. Retrieves the transaction details
+    3. Performs temporal anomaly detection
+    4. Returns transaction data with anomaly analysis
+    
+    Args:
+        request: Transaction analysis request with account_id, timestamp, and lookback_days
+        
+    Returns:
+        TransactionAnalysisResponse with transaction details and anomaly detection results
+        
+    Raises:
+        HTTPException: If transaction not found or analysis fails
+    """
+    try:
+        # Get transaction by key
+        transaction = get_transaction_by_key(
+            timestamp=request.timestamp,
+            from_account=request.account_id,
+            data_path=settings.data_path
+        )
+        
+        if not transaction:
+            return TransactionAnalysisResponse(
+                account_id=request.account_id,
+                timestamp=request.timestamp,
+                transaction_found=False,
+                message="Transaction not found for the given account_id and timestamp"
+            )
+        
+        # Use orchestrator to analyze transaction and detect anomalies
+        analysis_result = orchestrator.analyze_transaction(
+            account_id=request.account_id,
+            timestamp=request.timestamp,
+            lookback_days=request.lookback_days
+        )
+        
+        # Also detect temporal anomalies
+        anomaly_result = detect_temporal_anomalies(
+            account_id=request.account_id,
+            timestamp=request.timestamp,
+            lookback_days=request.lookback_days,
+            data_path=settings.data_path
+        )
+        
+        # Convert transaction to model
+        # Convert timestamp to string for Pydantic model
+        transaction['timestamp'] = str(transaction.get('timestamp', ''))
+        transaction_detail = TransactionDetail(**transaction)
+        
+        # Convert anomaly result to model
+        anomaly_detail = AnomalyDetail(**anomaly_result)
+        
+        return TransactionAnalysisResponse(
+            account_id=request.account_id,
+            timestamp=request.timestamp,
+            transaction_found=True,
+            transaction=transaction_detail,
+            anomaly_detection=anomaly_detail,
+            message="Transaction analyzed successfully"
+        )
+        
+    except InvalidTransactionKeyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error analyzing transaction: {str(e)}"
+        )
+
+
+@app.post(
+    f"{settings.api_prefix}/assess/risk",
+    response_model=RiskAssessmentResponse,
+    tags=["Risk Assessment"],
+    summary="Assess Account Risk",
+    description="Calculate risk score and detect AML patterns for an account",
+    status_code=status.HTTP_200_OK
+)
+async def assess_risk(request: RiskAssessmentRequest):
+    """
+    Assess risk for a specific account using RiskAssessmentAgent and FraudDetectionAgent.
+    
+    This endpoint:
+    1. Uses RiskAssessmentAgent to calculate comprehensive risk score (0.0-1.0)
+    2. Uses FraudDetectionAgent to detect fraud patterns
+    3. Combines both assessments for comprehensive risk analysis
+    4. Detects AML patterns (fan-out, fan-in, circular, smurfing)
+    5. Provides transaction statistics
+    6. Returns combined risk level classification
+    
+    Args:
+        request: Risk assessment request with account_id and lookback_days
+        
+    Returns:
+        RiskAssessmentResponse with risk metrics and transaction statistics
+        
+    Raises:
+        HTTPException: If risk assessment fails
+    """
+    try:
+        # Use orchestrator to assess risk with fraud detection
+        combined_result = orchestrator.assess_risk_with_fraud(
+            account_id=request.account_id,
+            lookback_days=request.lookback_days
+        )
+        
+        # Get account history for statistics
+        history = get_account_history(
+            account_id=request.account_id,
+            days_back=request.lookback_days,
+            data_path=settings.data_path
+        )
+        
+        # Use combined score if available, otherwise fall back to risk score
+        if combined_result['combined_score'] is not None:
+            risk_score = combined_result['combined_score']
+            risk_level = combined_result['combined_level']
+        elif combined_result['risk_assessment']:
+            risk_score = combined_result['risk_assessment']['risk_score']
+            risk_level = combined_result['risk_assessment']['risk_level']
+        else:
+            # Fallback: calculate directly
+            risk_score = calculate_risk_score(
+                account_id=request.account_id,
+                lookback_days=request.lookback_days,
+                data_path=settings.data_path
+            )
+            if risk_score >= 0.8:
+                risk_level = "critical"
+            elif risk_score >= 0.6:
+                risk_level = "high"
+            elif risk_score >= 0.4:
+                risk_level = "medium"
+            else:
+                risk_level = "low"
+        
+        # Detect AML patterns
+        aml_patterns = detect_aml_patterns(
+            account_id=request.account_id,
+            lookback_days=request.lookback_days,
+            data_path=settings.data_path
+        )
+        
+        # Convert AML patterns to models
+        aml_pattern_models = [AMLPattern(**pattern) for pattern in aml_patterns]
+        
+        # Build risk metrics
+        risk_metrics = RiskMetrics(
+            risk_score=risk_score,
+            risk_level=risk_level,
+            aml_patterns_detected=len(aml_patterns),
+            aml_patterns=aml_pattern_models
+        )
+        
+        # Build transaction statistics
+        transaction_stats = TransactionStatistics(**history['statistics'])
+        
+        return RiskAssessmentResponse(
+            account_id=request.account_id,
+            analysis_period_days=request.lookback_days,
+            date_range=history['date_range'],
+            risk_metrics=risk_metrics,
+            transaction_statistics=transaction_stats
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error assessing risk: {str(e)}"
+        )
+
+
+@app.post(
+    f"{settings.api_prefix}/recommend/actions",
+    response_model=RecommendActionsResponse,
+    tags=["Recommendations"],
+    summary="Recommend Actions",
+    description="Get recommended actions based on risk score and detected patterns",
+    status_code=status.HTTP_200_OK
+)
+async def recommend_actions(request: RecommendActionsRequest):
+    """
+    Generate action recommendations using RecommendationAgent.
+    
+    This endpoint:
+    1. Uses RecommendationAgent to generate structured recommendations
+    2. Calculates or uses provided risk score
+    3. Detects AML patterns
+    4. Generates prioritized action recommendations (ALERT, REVIEW, BLOCK, MONITOR)
+    5. Provides actionable insights
+    
+    Args:
+        request: Action recommendation request with account_id, optional risk_score, and lookback_days
+        
+    Returns:
+        RecommendActionsResponse with prioritized recommendations
+        
+    Raises:
+        HTTPException: If recommendation generation fails
+    """
+    try:
+        # Use orchestrator to generate recommendations
+        rec_result = orchestrator.generate_recommendations(
+            account_id=request.account_id,
+            risk_score=request.risk_score,
+            lookback_days=request.lookback_days,
+            include_evidence=True
+        )
+        
+        # Check if recommendations were generated successfully
+        if rec_result['recommendations']:
+            agent_recs = rec_result['recommendations']
+            risk_score = agent_recs['risk_score']
+            risk_level = agent_recs['risk_level']
+            
+            # Convert agent recommendations to API models
+            recommendations = []
+            for rec in agent_recs['recommendations']:
+                recommendations.append(ActionRecommendation(
+                    action=rec['action'],
+                    priority=rec['priority'],
+                    reason=rec['reason'],
+                    details={"description": rec.get('description', '')}
+                ))
+            
+            # Generate summary
+            summary = f"{risk_level.upper()} RISK: {len(recommendations)} recommendations generated."
+        else:
+            # Fallback: generate recommendations directly
+            if request.risk_score is None:
+                risk_score = calculate_risk_score(
+                    account_id=request.account_id,
+                    lookback_days=request.lookback_days,
+                    data_path=settings.data_path
+                )
+            else:
+                risk_score = request.risk_score
+            
+            if risk_score >= 0.8:
+                risk_level = "critical"
+            elif risk_score >= 0.6:
+                risk_level = "high"
+            elif risk_score >= 0.4:
+                risk_level = "medium"
+            else:
+                risk_level = "low"
+            
+            recommendations = [ActionRecommendation(
+                action="Manual review required",
+                priority=risk_level,
+                reason=f"Risk score: {risk_score:.2f}",
+                details={"risk_score": risk_score}
+            )]
+            
+            summary = f"{risk_level.upper()} RISK: Manual review recommended."
+        
+        return RecommendActionsResponse(
+            account_id=request.account_id,
+            risk_score=risk_score,
+            risk_level=risk_level,
+            recommendations=recommendations,
+            summary=summary
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating recommendations: {str(e)}"
+        )
+
+
+@app.post(
+    f"{settings.api_prefix}/detect/fraud",
+    response_model=FraudDetectionResponse,
+    tags=["Fraud Detection"],
+    summary="Detect Fraud",
+    description="Detect fraud signals using temporal anomalies and laundering history",
+    status_code=status.HTTP_200_OK
+)
+async def detect_fraud(request: TransactionAnalysisRequest):
+    """
+    Detect fraud for a specific transaction using FraudDetectionAgent.
+    
+    This endpoint:
+    1. Uses FraudDetectionAgent to detect fraud signals
+    2. Analyzes temporal anomalies
+    3. Checks laundering history from dataset
+    4. Provides fraud-specific recommendations
+    
+    Args:
+        request: Transaction analysis request with account_id, timestamp, and lookback_days
+        
+    Returns:
+        FraudDetectionResponse with fraud risk level and detected signals
+        
+    Raises:
+        HTTPException: If fraud detection fails
+    """
+    try:
+        # Use orchestrator to detect transaction fraud
+        fraud_result = orchestrator.detect_transaction_fraud(
+            account_id=request.account_id,
+            timestamp=request.timestamp,
+            lookback_days=request.lookback_days
+        )
+        
+        # Check if fraud analysis was successful
+        if fraud_result['fraud_analysis']:
+            fraud_data = fraud_result['fraud_analysis']
+            
+            fraud_signals = fraud_data.get('fraud_signals', [])
+            anomaly_score = fraud_data.get('anomaly_score', 0.0)
+            fraud_risk_level = fraud_data.get('fraud_risk_level', 'minimal')
+            recommendation = fraud_data.get('recommendation', 'No action required')
+            
+            return FraudDetectionResponse(
+                account_id=request.account_id,
+                timestamp=request.timestamp,
+                fraud_risk_level=fraud_risk_level,
+                anomaly_score=anomaly_score,
+                is_anomalous=fraud_data.get('is_anomalous', False),
+                fraud_signals=fraud_signals,
+                recommendation=recommendation,
+                anomaly_details=fraud_data.get('details')
+            )
+        else:
+            # Fallback if fraud analysis failed
+            return FraudDetectionResponse(
+                account_id=request.account_id,
+                timestamp=request.timestamp,
+                fraud_risk_level="unknown",
+                anomaly_score=0.0,
+                is_anomalous=False,
+                fraud_signals=[],
+                recommendation="Unable to perform fraud analysis",
+                anomaly_details={"errors": fraud_result.get('errors', [])}
+            )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error detecting fraud: {str(e)}"
+        )
+
+
+# ============================================================================
+# Root Endpoint
+# ============================================================================
+
+@app.get(
+    "/",
+    tags=["Root"],
+    summary="API Root",
+    description="Get API information and available endpoints"
+)
+async def root():
+    """Root endpoint with API information."""
+    return {
+        "name": settings.app_name,
+        "version": settings.app_version,
+        "docs": f"{settings.api_prefix}/docs",
+        "health": f"{settings.api_prefix}/health",
+        "endpoints": {
+            "analyze_transaction": f"{settings.api_prefix}/analyze/transaction",
+            "assess_risk": f"{settings.api_prefix}/assess/risk",
+            "recommend_actions": f"{settings.api_prefix}/recommend/actions"
+        }
+    }
+
+
+# Made with Bob

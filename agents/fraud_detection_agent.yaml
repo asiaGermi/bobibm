@@ -1,0 +1,102 @@
+# watsonx Orchestrate Skill Definition
+# Fraud Detection Agent for Financial Risk Management
+
+apiVersion: wxo.ibm.com/v1
+kind: Skill
+metadata:
+  name: fraud-detection-agent
+  displayName: Fraud Detection Agent
+  description: Detects fraud signals using temporal anomalies and laundering history from dataset
+  version: 1.0.0
+  tags:
+    - financial-risk
+    - fraud-detection
+    - anomaly-detection
+    - laundering-detection
+
+spec:
+  # REST API endpoint configuration
+  endpoint:
+    type: rest
+    url: ${API_BASE_URL}/api/v1/detect/fraud
+    method: POST
+    headers:
+      Content-Type: application/json
+    authentication:
+      type: none  # Add JWT when implemented
+  
+  # Input schema
+  input:
+    type: object
+    required:
+      - account_id
+      - timestamp
+    properties:
+      account_id:
+        type: string
+        description: Account ID to analyze for fraud
+        example: "8000EBD30"
+      timestamp:
+        type: string
+        description: Transaction timestamp to check for fraud signals
+        example: "2022/09/15 14:30"
+      lookback_days:
+        type: integer
+        description: Days of history to use for baseline comparison
+        default: 30
+        minimum: 1
+        maximum: 365
+  
+  # Output schema (matches FraudDetectionResponse in src/api/models.py)
+  output:
+    type: object
+    properties:
+      account_id:
+        type: string
+        description: Account ID analyzed
+      timestamp:
+        type: string
+        description: Transaction timestamp
+      fraud_risk_level:
+        type: string
+        description: Fraud risk level classification
+        enum: [minimal, low, medium, high, critical, unknown]
+      anomaly_score:
+        type: number
+        description: Anomaly score from 0.0 to 1.0
+        minimum: 0.0
+        maximum: 1.0
+      is_anomalous:
+        type: boolean
+        description: Whether fraud signals were detected
+      fraud_signals:
+        type: array
+        description: List of detected fraud signals
+        items:
+          type: object
+          properties:
+            signal_type:
+              type: string
+              description: Type of fraud signal
+            severity:
+              type: string
+              enum: [low, medium, high, critical]
+            description:
+              type: string
+      recommendation:
+        type: string
+        description: Fraud-specific recommendation
+      anomaly_details:
+        type: object
+        description: Detailed anomaly information
+        nullable: true
+  
+  # Error handling
+  errorHandling:
+    retryPolicy:
+      maxAttempts: 3
+      backoffMultiplier: 2
+      initialInterval: 1s
+    timeoutSeconds: 30
+
+# Made with Bob
