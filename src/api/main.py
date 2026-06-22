@@ -268,6 +268,8 @@ async def analyze_transaction(request: TransactionAnalysisRequest):
     Raises:
         HTTPException: If transaction not found or analysis fails
     """
+    if orchestrator is None:
+        raise HTTPException(status_code=503, detail="Service unavailable: data layer not initialized")
     try:
         # Get transaction by key
         transaction = get_transaction_by_key(
@@ -357,6 +359,8 @@ async def assess_risk(request: RiskAssessmentRequest):
     Raises:
         HTTPException: If risk assessment fails
     """
+    if orchestrator is None:
+        raise HTTPException(status_code=503, detail="Service unavailable: data layer not initialized")
     try:
         # Use orchestrator to assess risk with fraud detection
         combined_result = orchestrator.assess_risk_with_fraud(
@@ -458,6 +462,8 @@ async def recommend_actions(request: RecommendActionsRequest):
     Raises:
         HTTPException: If recommendation generation fails
     """
+    if orchestrator is None:
+        raise HTTPException(status_code=503, detail="Service unavailable: data layer not initialized")
     try:
         # Use orchestrator to generate recommendations
         rec_result = orchestrator.generate_recommendations(
@@ -556,6 +562,8 @@ async def detect_fraud(request: TransactionAnalysisRequest):
     Raises:
         HTTPException: If fraud detection fails
     """
+    if orchestrator is None:
+        raise HTTPException(status_code=503, detail="Service unavailable: data layer not initialized")
     try:
         # Use orchestrator to detect transaction fraud
         fraud_result = orchestrator.detect_transaction_fraud(

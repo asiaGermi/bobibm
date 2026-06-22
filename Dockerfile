@@ -42,7 +42,7 @@ COPY --chown=appuser:appuser data/ /app/data/
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    FRM_DATA_PATH=/app/data/raw/HI-Small_Trans.csv
+    FRM_DATA_PATH=/app/data/raw/HI-Small_Trans_sample.csv
 
 # Switch to non-root user
 USER appuser
