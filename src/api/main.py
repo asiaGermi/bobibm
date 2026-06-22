@@ -50,7 +50,9 @@ from .models import (
     ActionRecommendation,
     FraudDetectionResponse,
     HealthCheckResponse,
-    ErrorResponse
+    ErrorResponse,
+    ExplainRequest,
+    ExplainResponse
 )
 
 
@@ -74,9 +76,27 @@ class Settings(BaseSettings):
     # Data settings
     data_path: Optional[str] = None
     
+    # watsonx.ai settings (read from environment without FRM_ prefix)
+    watsonx_api_key: Optional[str] = None
+    watsonx_url: str = "https://eu-de.ml.cloud.ibm.com"
+    watsonx_project_id: Optional[str] = None
+    
     class Config:
         env_prefix = "FRM_"
         case_sensitive = False
+        # Allow reading WATSONX_* variables without FRM_ prefix
+        extra = "allow"
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Read WATSONX_* variables from environment if not set via FRM_ prefix
+        import os
+        if not self.watsonx_api_key:
+            self.watsonx_api_key = os.getenv('WATSONX_API_KEY')
+        if self.watsonx_url == "https://us-south.ml.cloud.ibm.com":
+            self.watsonx_url = os.getenv('WATSONX_URL', 'https://us-south.ml.cloud.ibm.com')
+        if not self.watsonx_project_id:
+            self.watsonx_project_id = os.getenv('WATSONX_PROJECT_ID')
 
 
 settings = Settings()
@@ -104,6 +124,17 @@ async def lifespan(app: FastAPI):
         # Initialize orchestrator
         orchestrator = AgentOrchestrator(settings.data_path)
         print(f"✓ Agent orchestrator initialized")
+        
+        # Log watsonx.ai configuration
+        if settings.watsonx_api_key and settings.watsonx_project_id:
+            print(f"✓ watsonx.ai configured: {settings.watsonx_url}")
+            print(f"  - Project ID: {settings.watsonx_project_id[:8]}...")
+        else:
+            print(f"⚠ watsonx.ai not configured (ExplanationAgent will use fallback mode)")
+            if not settings.watsonx_api_key:
+                print(f"  - Missing: WATSONX_API_KEY")
+            if not settings.watsonx_project_id:
+                print(f"  - Missing: WATSONX_PROJECT_ID")
     except Exception as e:
         print(f"⚠ Warning: Data layer connection issue: {str(e)}")
     
@@ -611,6 +642,81 @@ async def detect_fraud(request: TransactionAnalysisRequest):
         )
 
 
+@app.post(
+    f"{settings.api_prefix}/explain",
+    response_model=ExplainResponse,
+    tags=["Explanation"],
+    summary="Generate Risk Explanation",
+    description="Generate natural language explanation of risk assessment using IBM watsonx.ai",
+    status_code=status.HTTP_200_OK
+)
+async def generate_explanation(request: ExplainRequest):
+    """
+    Generate natural language explanation of risk assessment results using ExplanationAgent.
+    
+    This endpoint:
+    1. Uses ExplanationAgent with IBM watsonx.ai (Granite model)
+    2. Generates clear, professional explanations for compliance officers
+    3. Falls back to rule-based explanations if LLM is unavailable
+    4. Provides context about risk level, AML patterns, and recommendations
+    
+    Args:
+        request: Explanation request with account_id, risk_score, risk_level,
+                 aml_patterns, and recommendations
+        
+    Returns:
+        ExplainResponse with natural language explanation
+        
+    Raises:
+        HTTPException: If explanation generation fails
+    """
+    if orchestrator is None:
+        raise HTTPException(status_code=503, detail="Service unavailable: data layer not initialized")
+    
+    try:
+        # Prepare risk data for the orchestrator
+        risk_data = {
+            'risk_score': request.risk_score,
+            'risk_level': request.risk_level,
+            'aml_patterns': [{'pattern_type': p} for p in request.aml_patterns],
+            'recommendations': [{'action': r} for r in request.recommendations]
+        }
+        
+        # Use orchestrator to generate explanation
+        explanation_result = orchestrator.generate_explanation(
+            account_id=request.account_id,
+            risk_data=risk_data
+        )
+        
+        # Check if explanation was generated successfully
+        if explanation_result['explanation']:
+            explanation_data = explanation_result['explanation']
+            
+            return ExplainResponse(
+                account_id=request.account_id,
+                explanation=explanation_data['explanation'],
+                model_used=explanation_data['model_used'],
+                generated_at=datetime.utcnow().isoformat(),
+                fallback_used=(explanation_data['model_used'] == 'fallback')
+            )
+        else:
+            # If explanation failed, return error details
+            errors = explanation_result.get('errors', [])
+            error_msg = errors[0]['error'] if errors else "Unknown error"
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to generate explanation: {error_msg}"
+            )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating explanation: {str(e)}"
+        )
+
+
 # ============================================================================
 # Root Endpoint
 # ============================================================================
@@ -631,7 +737,9 @@ async def root():
         "endpoints": {
             "analyze_transaction": f"{settings.api_prefix}/analyze/transaction",
             "assess_risk": f"{settings.api_prefix}/assess/risk",
-            "recommend_actions": f"{settings.api_prefix}/recommend/actions"
+            "recommend_actions": f"{settings.api_prefix}/recommend/actions",
+            "detect_fraud": f"{settings.api_prefix}/detect/fraud",
+            "explain": f"{settings.api_prefix}/explain"
         }
     }
 

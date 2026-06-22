@@ -241,3 +241,57 @@ class FraudDetectionResponse(BaseModel):
 
 
 # Made with Bob
+
+class ExplainRequest(BaseModel):
+    """Request model for generating risk assessment explanations."""
+    
+    account_id: str = Field(
+        ...,
+        description="Account ID to explain",
+        examples=["8000EBD30"]
+    )
+    risk_score: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Risk score from risk assessment"
+    )
+    risk_level: str = Field(
+        ...,
+        description="Risk level: minimal, low, medium, high, critical",
+        examples=["high"]
+    )
+    aml_patterns: List[str] = Field(
+        default_factory=list,
+        description="List of detected AML pattern types"
+    )
+    recommendations: List[str] = Field(
+        default_factory=list,
+        description="List of recommended actions"
+    )
+    
+    @field_validator('account_id')
+    @classmethod
+    def validate_account_id(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("account_id cannot be empty")
+        return v.strip()
+    
+    @field_validator('risk_level')
+    @classmethod
+    def validate_risk_level(cls, v: str) -> str:
+        valid_levels = ['minimal', 'low', 'medium', 'high', 'critical']
+        if v.lower() not in valid_levels:
+            raise ValueError(f"risk_level must be one of: {', '.join(valid_levels)}")
+        return v.lower()
+
+
+class ExplainResponse(BaseModel):
+    """Response model for risk assessment explanations."""
+    
+    account_id: str = Field(description="Account ID")
+    explanation: str = Field(description="Natural language explanation of risk assessment")
+    model_used: str = Field(description="Model used for generation (e.g., 'ibm/granite-3-8b-instruct' or 'fallback')")
+    generated_at: str = Field(description="Timestamp when explanation was generated")
+    fallback_used: bool = Field(description="Whether fallback rule-based explanation was used")
+

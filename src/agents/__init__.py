@@ -7,20 +7,23 @@ This module provides specialized agents for financial risk analysis:
 - RiskAssessmentAgent: Calculates risk scores and identifies high-risk accounts
 - RecommendationAgent: Generates structured action recommendations
 - FraudDetectionAgent: Detects fraud signals and anomalies
+- ExplanationAgent: Generates natural language explanations using IBM watsonx.ai
 
-All agents are data-driven with no LLM calls.
+Most agents are data-driven with no LLM calls, except ExplanationAgent which uses Granite.
 """
 
 from .transaction_analysis_agent import TransactionAnalysisAgent
 from .risk_assessment_agent import RiskAssessmentAgent
 from .recommendation_agent import RecommendationAgent
 from .fraud_detection_agent import FraudDetectionAgent
+from .explanation_agent import ExplanationAgent
 
 __all__ = [
     'TransactionAnalysisAgent',
     'RiskAssessmentAgent',
     'RecommendationAgent',
-    'FraudDetectionAgent'
+    'FraudDetectionAgent',
+    'ExplanationAgent'
 ]
 
 # Made with Bob

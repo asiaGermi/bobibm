@@ -7,12 +7,14 @@ This module coordinates agent calls and handles errors gracefully.
 
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+import os
 
 from ..agents import (
     TransactionAnalysisAgent,
     RiskAssessmentAgent,
     RecommendationAgent,
-    FraudDetectionAgent
+    FraudDetectionAgent,
+    ExplanationAgent
 )
 
 
@@ -273,6 +275,71 @@ class AgentOrchestrator:
         except Exception as e:
             result['errors'].append({
                 'agent': 'FraudDetectionAgent',
+                'error': f"Unexpected error: {str(e)}"
+            })
+        
+        return result
+    
+    def generate_explanation(
+        self,
+        account_id: str,
+        risk_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Orchestrate explanation generation using ExplanationAgent with IBM watsonx.ai.
+        
+        Args:
+            account_id: Account ID
+            risk_data: Dictionary containing:
+                - risk_score (float): Risk score from 0.0 to 1.0
+                - risk_level (str): Risk level (critical/high/medium/low/minimal)
+                - aml_patterns (list, optional): List of AML pattern dicts
+                - recommendations (list, optional): List of recommendation dicts
+                
+        Returns:
+            Dictionary with explanation results and any errors
+        """
+        result = {
+            'account_id': account_id,
+            'explanation': None,
+            'errors': []
+        }
+        
+        # Get watsonx.ai credentials from environment
+        api_key = os.getenv('WATSONX_API_KEY')
+        url = os.getenv('WATSONX_URL', 'https://eu-de.ml.cloud.ibm.com')
+        project_id = os.getenv('WATSONX_PROJECT_ID')
+        
+        # Initialize ExplanationAgent with credentials
+        try:
+            explanation_agent = ExplanationAgent(
+                api_key=api_key,
+                url=url,
+                project_id=project_id
+            )
+            
+            # Prepare input data for the agent
+            agent_input = {
+                'account_id': account_id,
+                'risk_score': risk_data.get('risk_score'),
+                'risk_level': risk_data.get('risk_level'),
+                'aml_patterns': risk_data.get('aml_patterns', []),
+                'recommendations': risk_data.get('recommendations', [])
+            }
+            
+            # Run the explanation agent
+            explanation_result = explanation_agent.run(agent_input)
+            
+            if explanation_result['status'] == 'success':
+                result['explanation'] = explanation_result['result']
+            else:
+                result['errors'].append({
+                    'agent': 'ExplanationAgent',
+                    'error': explanation_result['metadata'].get('error', 'Unknown error')
+                })
+        except Exception as e:
+            result['errors'].append({
+                'agent': 'ExplanationAgent',
                 'error': f"Unexpected error: {str(e)}"
             })
         

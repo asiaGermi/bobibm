@@ -5,3 +5,4 @@ pydantic
 pydantic-settings
 python-dotenv
 ibm-watsonx-orchestrate
+ibm-watsonx-ai>=0.2.0
