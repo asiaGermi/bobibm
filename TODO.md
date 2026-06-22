@@ -1,7 +1,7 @@
 # TODO — IBM Open Agentic Builders · Track A: Financial Risk Management
 
-**Demo**: 1 luglio 2026 · **Finale**: 8 luglio 2026 · **Oggi**: 21 giugno 2026 · **Giorni rimasti**: 10  
-**Aggiornato**: 21 giugno 2026
+**Demo**: 1 luglio 2026 · **Finale**: 8 luglio 2026 · **Oggi**: 22 giugno 2026 · **Giorni rimasti**: 9  
+**Aggiornato**: 22 giugno 2026
 
 ---
 
@@ -115,19 +115,22 @@
 - ✅ `docker-compose.yml` — volume ./data read-only, env vars, network dedicata
 - ✅ `.env.example` — template completo (JWT e wxO commentati per Step 2)
 - ✅ `DOCKER.md` — guida operativa con curl di test per tutti e 4 gli endpoint
-- ❌ Build e test locale container (`docker-compose up -d`)
-- ⏳ Push immagine su IBM Cloud Container Registry
+- ❌ Build e test locale container (Docker bloccato da Accenture)
+- ✅ IBM Cloud Container Registry namespace `financial-risk` creato su `de.icr.io`
+- ✅ Build immagine su IBM Cloud Code Engine da GitHub (Succeeded)
+- ✅ Deploy su Code Engine — revisione 00007 Ready, porta 8000, sample CSV 15k transazioni
 
 ---
 
-## FASE 8 · Deploy IBM Cloud
+## FASE 8 · Deploy IBM Cloud ✅ COMPLETATA
 
-- ⏳ Provisioning IBM Cloud Code Engine (environment + project)
-- ⏳ Push immagine Docker su IBM Cloud Container Registry
-- ⏳ Deploy applicazione su Code Engine
-- ⏳ Configurazione variabili ambiente su Code Engine
-- ⏳ Esposizione endpoint pubblico HTTPS
-- ⏳ Test endpoint pubblico con curl/Postman
+- ✅ Provisioning IBM Cloud Code Engine (progetto ce-675000bo4y, eu-de)
+- ✅ Push immagine Docker su IBM Cloud Container Registry (`private.de.icr.io/financial-risk/financial-risk-management:latest`)
+- ✅ Deploy applicazione su Code Engine (revisione 00007, porta 8000)
+- ✅ Dataset sample CSV 15k transazioni nel container
+- ✅ Endpoint pubblico HTTPS attivo: `https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud`
+- ✅ Test health endpoint: `data_layer_status: connected`, 15.000 transazioni
+- ✅ Test `/api/v1/assess/risk`: risk_score, AML patterns, statistiche transazionali
 
 ---
 
@@ -160,8 +163,8 @@
 | 4 · Agenti | ✅ Completo | 100% |
 | 5 · API REST | ✅ Completo | 100% |
 | 6 · Orchestrazione wxO | 🔄 Definizioni ok, deploy mancante | 60% |
-| 7 · Containerizzazione | ✅ File pronti, build da testare | 80% |
-| 8 · Deploy IBM Cloud | ❌ Non iniziato | 0% |
+| 7 · Containerizzazione | ✅ Completo | 100% |
+| 8 · Deploy IBM Cloud | ✅ Completo — endpoint pubblico live | 100% |
 | 9 · Testing | 🔄 Parziale | 15% |
 | 10 · Demo | ❌ Non iniziato | 0% |
 
@@ -176,7 +179,7 @@
 | 21-23 giu | Bob cmd 3: orchestrazione locale | ✅ FATTO |
 | 21-23 giu | Bob cmd 4: skill wxO | ✅ FATTO |
 | 21-22 giu | Bob cmd 5: Dockerfile + docker-compose | ✅ FATTO |
-| 22-24 giu | Build + test container locale, poi deploy IBM Cloud Code Engine | ❌ PROSSIMO |
+| 22-24 giu | Deploy IBM Cloud Code Engine | ✅ FATTO |
 | 24-25 giu | Deploy skills su wxO + test workflow | ❌ |
 | 25-28 giu | Test end-to-end su endpoint pubblico | ❌ |
 | 28-30 giu | Video demo + slide architettura | ❌ |
