@@ -61,7 +61,7 @@ class ExplanationAgent:
                     credentials=credentials,
                     project_id=project_id,
                     params={
-                        "max_new_tokens": 500,
+                        "max_tokens": 500,
                         "temperature": 0.3,
                         "repetition_penalty": 1.1
                     }
