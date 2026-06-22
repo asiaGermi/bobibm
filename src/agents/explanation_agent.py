@@ -61,7 +61,6 @@ class ExplanationAgent:
                     credentials=credentials,
                     project_id=project_id,
                     params={
-                        "decoding_method": "greedy",
                         "max_new_tokens": 500,
                         "temperature": 0.3,
                         "repetition_penalty": 1.1
@@ -224,18 +223,19 @@ class ExplanationAgent:
         prompt = self._build_prompt(
             account_id, risk_score, risk_level, aml_patterns, recommendations
         )
-        
-        # Call the model
-        response = self.model.generate_text(prompt=prompt)
-        
-        # Extract tokens used (if available in response metadata)
+
+        # Call the model using chat API
+        messages = [{"role": "user", "content": prompt}]
+        response = self.model.chat(messages=messages)
+
+        # Extract text and tokens
         tokens_used = 0
-        if hasattr(response, 'token_usage'):
-            tokens_used = response.token_usage.get('total_tokens', 0)
-        
-        # Clean up the response
-        explanation = response.strip() if isinstance(response, str) else str(response)
-        
+        try:
+            explanation = response['choices'][0]['message']['content'].strip()
+            tokens_used = response.get('usage', {}).get('total_tokens', 0)
+        except (KeyError, IndexError, TypeError):
+            explanation = str(response)
+
         return explanation, tokens_used
     
     def _build_prompt(
