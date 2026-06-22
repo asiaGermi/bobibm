@@ -26,22 +26,21 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
+# Install dependencies as root directly into system
+COPY --from=builder /root/.local /usr/local
+
 # Create non-root user
 RUN groupadd -r appuser && \
     useradd -r -g appuser -u 1000 appuser && \
     mkdir -p /app/data/raw && \
     chown -R appuser:appuser /app
 
-# Copy Python dependencies from builder
-COPY --from=builder /root/.local /home/appuser/.local
-
 # Copy application code
 COPY --chown=appuser:appuser src/ /app/src/
 COPY --chown=appuser:appuser data/ /app/data/
 
 # Set environment variables
-ENV PATH=/home/appuser/.local/bin:$PATH \
-    PYTHONUNBUFFERED=1 \
+ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     FRM_DATA_PATH=/app/data/raw/HI-Small_Trans.csv
 
