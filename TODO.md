@@ -131,6 +131,10 @@
 - ✅ Endpoint pubblico HTTPS attivo: `https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud`
 - ✅ Test health endpoint: `data_layer_status: connected`, 15.000 transazioni
 - ✅ Test `/api/v1/assess/risk`: risk_score, AML patterns, statistiche transazionali
+- ✅ `scripts/deploy_unified.py` — script automatizzato (build → push → deploy CE → health check → registra skills wxO)
+- ✅ `scripts/README.md` — guida uso script deploy
+- ✅ `docs/deployment/QUICK-START.md` — guida rapida deployment (5 min)
+- ✅ `docs/deployment/api-deployment-strategy.md` — strategia completa deploy via IBM Cloud API
 
 ---
 
@@ -180,6 +184,7 @@
 | 21-23 giu | Bob cmd 4: skill wxO | ✅ FATTO |
 | 21-22 giu | Bob cmd 5: Dockerfile + docker-compose | ✅ FATTO |
 | 22-24 giu | Deploy IBM Cloud Code Engine | ✅ FATTO |
+| 22-24 giu | Script deploy unificato + docs deployment | ✅ FATTO |
 | 24-25 giu | Deploy skills su wxO + test workflow | ❌ |
 | 25-28 giu | Test end-to-end su endpoint pubblico | ❌ |
 | 28-30 giu | Video demo + slide architettura | ❌ |
