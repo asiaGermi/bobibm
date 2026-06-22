@@ -142,6 +142,10 @@
 - ✅ Test `/api/v1/assess/risk`: risk_score, AML patterns, statistiche transazionali
 - ✅ **IBM watsonx.ai Granite integrato** — progetto `frm-granite` (us-south), modello `ibm/granite-4-h-small`
 - ✅ Test `/api/v1/explain`: `model_used: ibm/granite-4-h-small`, `fallback_used: False`
+- ✅ `scripts/deploy_unified.py` — script automatizzato (build → push → deploy CE → health check → registra skills wxO)
+- ✅ `scripts/README.md` — guida uso script deploy
+- ✅ `docs/deployment/QUICK-START.md` — guida rapida deployment (5 min)
+- ✅ `docs/deployment/api-deployment-strategy.md` — strategia completa deploy via IBM Cloud API
 - ⏳ Prune immagini ICR (storage >80%)
 
 ---
@@ -192,8 +196,13 @@
 | 21-23 giu | Bob cmd 4: skill wxO | ✅ FATTO |
 | 21-22 giu | Bob cmd 5: Dockerfile + docker-compose | ✅ FATTO |
 | 22-24 giu | Deploy IBM Cloud Code Engine | ✅ FATTO |
+<<<<<<< HEAD
 | 22 giu (sera) | Granite ibm/granite-4-h-small live su CE | ✅ FATTO |
 | 23-24 giu | Deploy skills su wxO + test workflow | ❌ |
 | 24-25 giu | README + script demo curl | ❌ |
+=======
+| 22-24 giu | Script deploy unificato + docs deployment | ✅ FATTO |
+| 24-25 giu | Deploy skills su wxO + test workflow | ❌ |
+>>>>>>> 2755b6e9a9c4f3feb93c240f608f10ac6359114f
 | 25-28 giu | Test end-to-end su endpoint pubblico | ❌ |
 | 28-30 giu | Video demo + slide architettura | ❌ |

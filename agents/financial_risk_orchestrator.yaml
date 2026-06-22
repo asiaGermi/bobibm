@@ -1,208 +1,79 @@
-# watsonx Orchestrate Agent Definition
-# Financial Risk Orchestrator - Coordinates all risk management skills
+spec_version: v1
+kind: native
+name: financial_risk_orchestrator
+title: Financial Risk Orchestrator
+description: >
+  Orchestrates financial risk analysis by coordinating multiple specialized tools.
+  Given an account_id, this agent performs comprehensive risk assessment by:
+  1. Assessing overall risk score and level
+  2. Detecting potential fraud signals
+  3. Providing actionable recommendations based on the analysis
+  
+  The agent returns a consolidated risk report with all findings.
 
-apiVersion: wxo.ibm.com/v1
-kind: Agent
-metadata:
-  name: financial-risk-orchestrator
-  displayName: Financial Risk Orchestrator
-  description: Orchestrates comprehensive financial risk analysis by coordinating transaction analysis, risk assessment, fraud detection, and recommendation generation
-  version: 1.0.0
-  tags:
-    - financial-risk
-    - orchestrator
-    - aml-compliance
-    - risk-management
+instructions: |
+  You are a Financial Risk Orchestrator agent specialized in comprehensive account risk analysis.
+  
+  When a user provides an account_id, follow this exact sequence:
+  
+  1. RISK ASSESSMENT (First Priority):
+     - Use the assessRisk tool with the provided account_id
+     - Extract the risk_score and risk_level from the response
+     - Note any AML patterns and transaction statistics
+  
+  2. FRAUD DETECTION (Second Priority):
+     - Use the detectFraud tool with the account_id
+     - Use current timestamp in format "YYYY/MM/DD HH:MM"
+     - Analyze fraud_risk_level, anomaly_score, and fraud_signals
+  
+  3. RECOMMENDATIONS (Third Priority):
+     - Use the recommendActions tool with the account_id
+     - Pass the risk_score obtained from step 1 if available
+     - Review all recommended actions (ALERT, REVIEW, BLOCK, MONITOR)
+  
+  4. CONSOLIDATED REPORT:
+     Present a comprehensive risk report in this format:
+     
+     ## Financial Risk Analysis Report
+     **Account ID:** [account_id]
+     **Analysis Date:** [current date/time]
+     
+     ### Risk Assessment
+     - **Risk Score:** [0.0-1.0]
+     - **Risk Level:** [minimal/low/medium/high/critical]
+     - **AML Patterns:** [list any patterns found]
+     - **Transaction Statistics:** [key statistics]
+     
+     ### Fraud Detection
+     - **Fraud Risk Level:** [level]
+     - **Anomaly Score:** [score]
+     - **Fraud Signals:** [list all signals]
+     - **Recommendation:** [fraud detection recommendation]
+     
+     ### Recommended Actions
+     [List all recommendations with priority and reason]
+     
+     ### Summary
+     [Provide a brief executive summary of the overall risk profile]
+  
+  IMPORTANT GUIDELINES:
+  - Always execute tools in the specified sequence
+  - If a tool fails, note it in the report and continue with remaining tools
+  - Use the risk_score from assessRisk when calling recommendActions
+  - Present findings clearly and professionally
+  - Highlight critical issues that require immediate attention
+  - If user asks about a specific transaction, use analyzeTransaction tool with timestamp
 
-spec:
-  # Agent type and behavior
-  type: orchestrator
-  mode: sequential  # Execute skills in sequence
-  
-  # Skills to orchestrate (in execution order)
-  skills:
-    - name: transaction-analysis
-      skillRef: transaction-analysis-agent
-      description: Analyze transaction patterns and detect AML patterns
-      
-    - name: risk-assessment
-      skillRef: risk-assessment-agent
-      description: Calculate comprehensive risk score combining risk and fraud analysis
-      
-    - name: recommendation
-      skillRef: recommendation-agent
-      description: Generate prioritized action recommendations
-  
-  # Workflow definition
-  workflow:
-    # Step 1: Analyze Transaction
-    - step: analyze-transaction
-      skill: transaction-analysis
-      input:
-        account_id: ${input.account_id}
-        timestamp: ${input.timestamp}
-        lookback_days: ${input.lookback_days_short || 30}
-      output:
-        transaction_analysis: ${result}
-      onError:
-        action: continue
-        logLevel: warning
-    
-    # Step 2: Assess Risk (runs in parallel with fraud detection)
-    - step: assess-risk
-      skill: risk-assessment
-      input:
-        account_id: ${input.account_id}
-        lookback_days: ${input.lookback_days_long || 90}
-      output:
-        risk_assessment: ${result}
-      onError:
-        action: continue
-        logLevel: warning
-    
-    # Step 3: Generate Recommendations
-    - step: generate-recommendations
-      skill: recommendation
-      input:
-        account_id: ${input.account_id}
-        risk_score: ${steps.assess-risk.output.risk_metrics.risk_score}
-        lookback_days: ${input.lookback_days_long || 90}
-      output:
-        recommendations: ${result}
-      onError:
-        action: continue
-        logLevel: warning
-  
-  # Input schema for the orchestrator
-  input:
-    type: object
-    required:
-      - account_id
-    properties:
-      account_id:
-        type: string
-        description: Account ID to analyze
-        example: "8000EBD30"
-      timestamp:
-        type: string
-        description: Optional transaction timestamp for specific transaction analysis
-        example: "2022/09/15 14:30"
-      lookback_days_short:
-        type: integer
-        description: Days to look back for transaction analysis
-        default: 30
-        minimum: 1
-        maximum: 365
-      lookback_days_long:
-        type: integer
-        description: Days to look back for risk assessment
-        default: 90
-        minimum: 1
-        maximum: 365
-  
-  # Output schema - aggregated results from all skills
-  output:
-    type: object
-    properties:
-      account_id:
-        type: string
-        description: Account ID analyzed
-      execution_summary:
-        type: object
-        description: Summary of orchestration execution
-        properties:
-          total_steps: 
-            type: integer
-          successful_steps:
-            type: integer
-          failed_steps:
-            type: integer
-          execution_time_seconds:
-            type: number
-      transaction_analysis:
-        type: object
-        description: Results from transaction analysis skill
-        properties:
-          status:
-            type: string
-            enum: [success, error, skipped]
-          data:
-            type: object
-      risk_assessment:
-        type: object
-        description: Results from risk assessment skill
-        properties:
-          status:
-            type: string
-            enum: [success, error, skipped]
-          data:
-            type: object
-            properties:
-              risk_score:
-                type: number
-              risk_level:
-                type: string
-              aml_patterns_detected:
-                type: integer
-      recommendations:
-        type: object
-        description: Results from recommendation skill
-        properties:
-          status:
-            type: string
-            enum: [success, error, skipped]
-          data:
-            type: object
-            properties:
-              recommendations:
-                type: array
-                items:
-                  type: object
-              summary:
-                type: string
-      overall_assessment:
-        type: object
-        description: Aggregated risk assessment
-        properties:
-          risk_level:
-            type: string
-            enum: [minimal, low, medium, high, critical]
-          requires_immediate_action:
-            type: boolean
-          critical_findings:
-            type: array
-            items:
-              type: string
-          recommended_next_steps:
-            type: array
-            items:
-              type: string
-  
-  # Error handling and retry configuration
-  errorHandling:
-    strategy: continue-on-error  # Continue even if individual skills fail
-    aggregateErrors: true  # Collect all errors in final output
-    retryPolicy:
-      maxAttempts: 2
-      backoffMultiplier: 1.5
-      initialInterval: 2s
-    timeoutSeconds: 180  # 3 minutes total timeout
-  
-  # Monitoring and observability
-  monitoring:
-    enabled: true
-    logLevel: info
-    metrics:
-      - execution_time
-      - success_rate
-      - error_rate
-      - skill_performance
-    alerts:
-      - condition: error_rate > 0.1
-        severity: warning
-        notification: email
-      - condition: execution_time > 120
-        severity: info
-        notification: log
+llm: ibm/granite-3-8b-instruct
+
+tools:
+  - analyzeTransaction
+  - assessRisk
+  - detectFraud
+  - recommendActions
+
+config:
+  hidden: false
+  enable_cot: true
 
 # Made with Bob
