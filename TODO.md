@@ -106,15 +106,15 @@
 
 ---
 
-## FASE 6 · Orchestrazione watsonx Orchestrate ✅ COMPLETATA (definizioni)
+## FASE 6 · Orchestrazione watsonx Orchestrate ✅ COMPLETATA
 
 - ✅ `agents/transaction_analysis_agent.yaml` — skill wxO → `/api/v1/analyze/transaction`
 - ✅ `agents/risk_assessment_agent.yaml` — skill wxO → `/api/v1/assess/risk`
 - ✅ `agents/recommendation_agent.yaml` — skill wxO → `/api/v1/recommend/actions`
 - ✅ `agents/fraud_detection_agent.yaml` — skill wxO → `/api/v1/detect/fraud`
 - ✅ `agents/financial_risk_orchestrator.yaml` — orchestratore wxO sequenziale
-- ❌ Deploy skills su istanza watsonx Orchestrate
-- ❌ Test workflow wxO end-to-end
+- ✅ Deploy 4 tool + agente su istanza `wxo-675000bo4y` (eu-de) via ADK CLI
+- ✅ Test workflow wxO end-to-end — Financial Risk Analysis Report generato correttamente
 
 ---
 
@@ -178,7 +178,7 @@
 | 3 · Data Layer | ✅ Quasi completo | 80% |
 | 4 · Agenti (5 agenti incl. Granite) | ✅ Completo | 100% |
 | 5 · API REST (6 endpoint) | ✅ Completo | 100% |
-| 6 · Orchestrazione wxO | 🔄 Definizioni ok, deploy mancante | 60% |
+| 6 · Orchestrazione wxO | ✅ Completo — live su wxo-675000bo4y | 100% |
 | 7 · Containerizzazione | ✅ Completo | 100% |
 | 8 · Deploy IBM Cloud + Granite live | ✅ Completo — endpoint pubblico live | 100% |
 | 9 · Testing | 🔄 Parziale | 15% |
@@ -196,13 +196,9 @@
 | 21-23 giu | Bob cmd 4: skill wxO | ✅ FATTO |
 | 21-22 giu | Bob cmd 5: Dockerfile + docker-compose | ✅ FATTO |
 | 22-24 giu | Deploy IBM Cloud Code Engine | ✅ FATTO |
-<<<<<<< HEAD
 | 22 giu (sera) | Granite ibm/granite-4-h-small live su CE | ✅ FATTO |
-| 23-24 giu | Deploy skills su wxO + test workflow | ❌ |
-| 24-25 giu | README + script demo curl | ❌ |
-=======
-| 22-24 giu | Script deploy unificato + docs deployment | ✅ FATTO |
-| 24-25 giu | Deploy skills su wxO + test workflow | ❌ |
->>>>>>> 2755b6e9a9c4f3feb93c240f608f10ac6359114f
+| 22 giu (sera) | Script deploy unificato + docs deployment | ✅ FATTO |
+| 22 giu (sera) | Deploy skills + agente su wxO — end-to-end ok | ✅ FATTO |
+| 23-24 giu | README + script demo curl | ❌ |
 | 25-28 giu | Test end-to-end su endpoint pubblico | ❌ |
 | 28-30 giu | Video demo + slide architettura | ❌ |
