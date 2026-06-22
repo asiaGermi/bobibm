@@ -1,7 +1,7 @@
 # TODO — IBM Open Agentic Builders · Track A: Financial Risk Management
 
 **Demo**: 1 luglio 2026 · **Finale**: 8 luglio 2026 · **Oggi**: 22 giugno 2026 · **Giorni rimasti**: 9  
-**Aggiornato**: 22 giugno 2026
+**Aggiornato**: 22 giugno 2026 (sera)
 
 ---
 
@@ -75,19 +75,28 @@
   - ✅ Usa `detect_temporal_anomalies()` + laundering history
   - ✅ Restituisce fraud signals strutturati + modalità `account_profile`
 
+### Explanation Agent ✅ NUOVO
+- ✅ `src/agents/explanation_agent.py`
+  - ✅ Metodo `run(input: dict) -> dict`
+  - ✅ Usa IBM watsonx.ai Granite (`ibm/granite-4-h-small`) via ibm-watsonx-ai SDK
+  - ✅ Chat API (`/ml/v1/text/chat`) — no deprecated endpoints
+  - ✅ Fallback rule-based se LLM non disponibile
+  - ✅ Testato live su Cloud Engine — `fallback_used: False`
+
 ### Common
-- ✅ `src/agents/__init__.py` — export tutti e 4 gli agenti
+- ✅ `src/agents/__init__.py` — export tutti e 5 gli agenti
 
 ---
 
 ## FASE 5 · API REST ✅ COMPLETATA
 
-- ✅ `src/api/models.py` — modelli Pydantic request/response (+ `FraudDetectionResponse`)
+- ✅ `src/api/models.py` — modelli Pydantic request/response (+ `ExplainRequest`, `ExplainResponse`)
 - ✅ `src/api/main.py` — app FastAPI con CORS e OpenAPI
   - ✅ `POST /api/v1/analyze/transaction`
   - ✅ `POST /api/v1/assess/risk`
   - ✅ `POST /api/v1/recommend/actions`
   - ✅ `POST /api/v1/detect/fraud`
+  - ✅ `POST /api/v1/explain` — **NUOVO** LLM Granite explanation
   - ✅ `GET  /api/v1/health`
 - ✅ `src/api/orchestrator.py` — coordina le chiamate agli agenti con fallback graceful
 - ✅ `src/api/__init__.py`
@@ -126,11 +135,14 @@
 
 - ✅ Provisioning IBM Cloud Code Engine (progetto ce-675000bo4y, eu-de)
 - ✅ Push immagine Docker su IBM Cloud Container Registry (`private.de.icr.io/financial-risk/financial-risk-management:latest`)
-- ✅ Deploy applicazione su Code Engine (revisione 00007, porta 8000)
+- ✅ Deploy applicazione su Code Engine (revisione 00016, porta 8000)
 - ✅ Dataset sample CSV 15k transazioni nel container
 - ✅ Endpoint pubblico HTTPS attivo: `https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud`
 - ✅ Test health endpoint: `data_layer_status: connected`, 15.000 transazioni
 - ✅ Test `/api/v1/assess/risk`: risk_score, AML patterns, statistiche transazionali
+- ✅ **IBM watsonx.ai Granite integrato** — progetto `frm-granite` (us-south), modello `ibm/granite-4-h-small`
+- ✅ Test `/api/v1/explain`: `model_used: ibm/granite-4-h-small`, `fallback_used: False`
+- ⏳ Prune immagini ICR (storage >80%)
 
 ---
 
@@ -160,11 +172,11 @@
 | 1 · Analisi e Design | ✅ Completo | 100% |
 | 2 · Setup Ambiente | 🔄 Parziale | 50% |
 | 3 · Data Layer | ✅ Quasi completo | 80% |
-| 4 · Agenti | ✅ Completo | 100% |
-| 5 · API REST | ✅ Completo | 100% |
+| 4 · Agenti (5 agenti incl. Granite) | ✅ Completo | 100% |
+| 5 · API REST (6 endpoint) | ✅ Completo | 100% |
 | 6 · Orchestrazione wxO | 🔄 Definizioni ok, deploy mancante | 60% |
 | 7 · Containerizzazione | ✅ Completo | 100% |
-| 8 · Deploy IBM Cloud | ✅ Completo — endpoint pubblico live | 100% |
+| 8 · Deploy IBM Cloud + Granite live | ✅ Completo — endpoint pubblico live | 100% |
 | 9 · Testing | 🔄 Parziale | 15% |
 | 10 · Demo | ❌ Non iniziato | 0% |
 
@@ -180,6 +192,8 @@
 | 21-23 giu | Bob cmd 4: skill wxO | ✅ FATTO |
 | 21-22 giu | Bob cmd 5: Dockerfile + docker-compose | ✅ FATTO |
 | 22-24 giu | Deploy IBM Cloud Code Engine | ✅ FATTO |
-| 24-25 giu | Deploy skills su wxO + test workflow | ❌ |
+| 22 giu (sera) | Granite ibm/granite-4-h-small live su CE | ✅ FATTO |
+| 23-24 giu | Deploy skills su wxO + test workflow | ❌ |
+| 24-25 giu | README + script demo curl | ❌ |
 | 25-28 giu | Test end-to-end su endpoint pubblico | ❌ |
 | 28-30 giu | Video demo + slide architettura | ❌ |
