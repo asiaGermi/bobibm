@@ -64,8 +64,6 @@ instructions: |
   - Highlight critical issues that require immediate attention
   - If user asks about a specific transaction, use analyzeTransaction tool with timestamp
 
-llm: ibm/granite-3-8b-instruct
-
 tools:
   - analyzeTransaction
   - assessRisk
