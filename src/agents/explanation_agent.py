@@ -27,7 +27,7 @@ class ExplanationAgent:
     for compliance officers. Falls back to rule-based explanations if LLM fails.
     """
     
-    MODEL_ID = "ibm/granite-3-8b-instruct"
+    MODEL_ID = "ibm/granite-4-h-small"
     
     def __init__(
         self,
