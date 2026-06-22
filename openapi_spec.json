@@ -1,0 +1,278 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Financial Risk API",
+    "version": "1.0.0",
+    "description": "API for financial risk assessment, fraud detection, and transaction analysis"
+  },
+  "servers": [
+    {
+      "url": "https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud"
+    }
+  ],
+  "paths": {
+    "/api/v1/analyze/transaction": {
+      "post": {
+        "operationId": "analyzeTransaction",
+        "summary": "Transaction Analysis Tool",
+        "description": "Analyzes transaction details, performs anomaly detection, and identifies AML patterns",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["account_id", "timestamp"],
+                "properties": {
+                  "account_id": {
+                    "type": "string",
+                    "description": "The account identifier to analyze"
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "description": "Transaction timestamp in format YYYY/MM/DD HH:MM"
+                  },
+                  "lookback_days": {
+                    "type": "integer",
+                    "default": 30,
+                    "description": "Number of days to look back for analysis"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction analysis results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "transaction_details": {
+                      "type": "object",
+                      "description": "Details of the analyzed transaction"
+                    },
+                    "anomaly_detection": {
+                      "type": "object",
+                      "description": "Anomaly detection results"
+                    },
+                    "aml_patterns": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Identified AML patterns"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assess/risk": {
+      "post": {
+        "operationId": "assessRisk",
+        "summary": "Risk Assessment Tool",
+        "description": "Assesses overall risk for an account including risk score, level, AML patterns, and transaction statistics",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["account_id"],
+                "properties": {
+                  "account_id": {
+                    "type": "string",
+                    "description": "The account identifier to assess"
+                  },
+                  "lookback_days": {
+                    "type": "integer",
+                    "default": 90,
+                    "description": "Number of days to look back for risk assessment"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Risk assessment results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "risk_score": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 1.0,
+                      "description": "Risk score between 0.0 and 1.0"
+                    },
+                    "risk_level": {
+                      "type": "string",
+                      "enum": ["minimal", "low", "medium", "high", "critical"],
+                      "description": "Risk level classification"
+                    },
+                    "aml_patterns": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Identified AML patterns"
+                    },
+                    "transaction_statistics": {
+                      "type": "object",
+                      "description": "Statistical analysis of transactions"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/detect/fraud": {
+      "post": {
+        "operationId": "detectFraud",
+        "summary": "Fraud Detection Tool",
+        "description": "Detects potential fraud by analyzing fraud risk level, anomaly scores, and fraud signals",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["account_id", "timestamp"],
+                "properties": {
+                  "account_id": {
+                    "type": "string",
+                    "description": "The account identifier to check for fraud"
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "description": "Transaction timestamp in format YYYY/MM/DD HH:MM"
+                  },
+                  "lookback_days": {
+                    "type": "integer",
+                    "default": 30,
+                    "description": "Number of days to look back for fraud detection"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fraud detection results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fraud_risk_level": {
+                      "type": "string",
+                      "description": "Level of fraud risk detected"
+                    },
+                    "anomaly_score": {
+                      "type": "number",
+                      "description": "Anomaly score for the transaction"
+                    },
+                    "fraud_signals": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "List of detected fraud signals"
+                    },
+                    "recommendation": {
+                      "type": "string",
+                      "description": "Recommended action based on fraud detection"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recommend/actions": {
+      "post": {
+        "operationId": "recommendActions",
+        "summary": "Recommendation Tool",
+        "description": "Provides actionable recommendations based on risk assessment and fraud detection",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["account_id"],
+                "properties": {
+                  "account_id": {
+                    "type": "string",
+                    "description": "The account identifier for recommendations"
+                  },
+                  "risk_score": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "description": "Optional risk score from previous assessment"
+                  },
+                  "lookback_days": {
+                    "type": "integer",
+                    "default": 90,
+                    "description": "Number of days to look back for recommendations"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Action recommendations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "recommendations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "action": {
+                            "type": "string",
+                            "enum": ["ALERT", "REVIEW", "BLOCK", "MONITOR"],
+                            "description": "Recommended action type"
+                          },
+                          "priority": {
+                            "type": "string",
+                            "description": "Priority level of the recommendation"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "description": "Reason for the recommendation"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
