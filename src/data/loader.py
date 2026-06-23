@@ -32,7 +32,8 @@ import numpy as np
 
 
 # Constants
-DEFAULT_DATA_PATH = Path(__file__).parent.parent.parent / "data" / "raw" / "HI-Small_Trans.csv"
+_csv_env = os.getenv("CSV_PATH", "data/raw/HI-Small_Trans_sample.csv")
+DEFAULT_DATA_PATH = Path(_csv_env) if Path(_csv_env).is_absolute() else Path(__file__).parent.parent.parent / _csv_env
 CACHE_SIZE = 1  # Only cache the main dataset once
 
 
