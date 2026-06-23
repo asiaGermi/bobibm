@@ -28,17 +28,17 @@ https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud
 
 **Python:**
 ```bash
-python scripts/demo.py
+python scripts/demo/demo.py
 ```
 
 **PowerShell:**
 ```powershell
-.\scripts\demo.ps1
+.\scripts\demo\demo.ps1
 ```
 
 **Automatico (no input):**
 ```bash
-python scripts/demo_auto.py
+python scripts/demo/demo_auto.py
 ```
 
 La demo esegue un workflow end-to-end in 6 step:
@@ -49,7 +49,7 @@ La demo esegue un workflow end-to-end in 6 step:
 5. Recommendations
 6. Explanation (Granite LLM)
 
-📖 **Documentazione Demo:** [`scripts/DEMO_README.md`](scripts/DEMO_README.md)
+📖 **Documentazione Demo:** [`scripts/demo/README.md`](scripts/demo/README.md)
 
 ---
 
@@ -212,15 +212,16 @@ python scripts/deploy_unified.py --environment production
 
 6. **Deploy skills su watsonx Orchestrate**
 ```bash
-.\deploy.ps1
+.\deployment\deploy.ps1
 # Oppure
-python deploy_to_wxo.py
+python deployment/deploy_to_wxo.py
 ```
 
 📖 **Guide Dettagliate:**
-- [Deployment Guide](DEPLOYMENT_GUIDE.md)
+- [Deployment Guide](docs/guides/DEPLOYMENT_GUIDE.md)
 - [Quick Start](docs/deployment/QUICK-START.md)
-- [Docker Guide](DOCKER.md)
+- [Docker Guide](docs/guides/DOCKER.md)
+- [All Guides](docs/guides/)
 
 ---
 
@@ -303,20 +304,26 @@ python scripts/demo_auto.py
 
 ### Guide Principali
 - [Architecture Slides](docs/demo/ARCHITECTURE_SLIDES.md) - 13 slide complete
-- [Demo Scripts Guide](scripts/DEMO_README.md) - Come eseguire la demo
-- [Deployment Guide](DEPLOYMENT_GUIDE.md) - Deploy su IBM Cloud
+- [Demo Scripts Guide](scripts/demo/README.md) - Come eseguire la demo
+- [Deployment Guide](docs/guides/DEPLOYMENT_GUIDE.md) - Deploy su IBM Cloud
 - [Demo Preparation Summary](docs/demo/DEMO_PREPARATION_SUMMARY.md) - Riepilogo materiali
+- [All Guides](docs/guides/) - Tutte le guide
 
 ### Guide Tecniche
-- [Docker Guide](DOCKER.md) - Containerizzazione
+- [Docker Guide](docs/guides/DOCKER.md) - Containerizzazione
 - [Quick Start](docs/deployment/QUICK-START.md) - Setup rapido (5 min)
 - [API Deployment Strategy](docs/deployment/api-deployment-strategy.md) - Strategia deploy
 - [Gap Analysis](docs/gap-analysis/gap-analysis.md) - Analisi requisiti
 
+### Analysis & Strategy
+- [TODO](docs/analysis/TODO.md) - Task tracking
+- [Comparison Analysis](docs/analysis/COMPARISON_ANALYSIS.md) - Confronto approcci
+- [Strategic Recommendations](docs/analysis/STRATEGIC_RECOMMENDATION.md) - Raccomandazioni
+- [All Analysis](docs/analysis/) - Tutti i documenti di analisi
+
 ### Reference
 - [Mandate](docs/mandate.md) - Requisiti progetto
 - [Strategy](docs/strategy/strategy.md) - Strategia implementazione
-- [TODO](TODO.md) - Task tracking
 
 ---
 
@@ -440,7 +447,7 @@ pip install -r requirements.txt
 
 **Quick Demo:**
 ```bash
-python scripts/demo.py
+python scripts/demo/demo.py
 ```
 
 ---
