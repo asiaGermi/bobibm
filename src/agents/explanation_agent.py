@@ -9,8 +9,6 @@ explanations of risk assessment results for compliance officers.
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 import logging
-import os
-
 try:
     from ibm_watsonx_ai import Credentials
     from ibm_watsonx_ai.foundation_models import ModelInference
@@ -18,14 +16,6 @@ try:
 except ImportError:
     WATSONX_AVAILABLE = False
     logging.warning("ibm-watsonx-ai not available. ExplanationAgent will use fallback mode.")
-
-# Import governance modules
-try:
-    from ..governance import ModelRegistry, FactsheetManager, GovernanceMonitor
-    GOVERNANCE_AVAILABLE = True
-except ImportError:
-    GOVERNANCE_AVAILABLE = False
-    logging.warning("Governance modules not available. Running without governance integration.")
 
 
 class ExplanationAgent:
@@ -42,30 +32,21 @@ class ExplanationAgent:
         self,
         api_key: Optional[str] = None,
         url: Optional[str] = None,
-        project_id: Optional[str] = None,
-        enable_governance: Optional[bool] = None
+        project_id: Optional[str] = None
     ):
         """
-        Initialize the Explanation Agent with governance integration.
-        
+        Initialize the Explanation Agent.
+
         Args:
             api_key: IBM Cloud API key for watsonx.ai
             url: watsonx.ai service URL
             project_id: watsonx.ai project ID
-            enable_governance: Enable governance tracking (default: from env)
         """
         self.agent_name = "ExplanationAgent"
         self.api_key = api_key
         self.url = url
         self.project_id = project_id
         self.model = None
-        
-        # Governance integration
-        self.governance_enabled = enable_governance if enable_governance is not None else \
-            os.getenv("ENABLE_GOVERNANCE_TRACKING", "true").lower() == "true"
-        self.model_registry = None
-        self.factsheet_manager = None
-        self.governance_monitor = None
         
         # Initialize watsonx.ai model if credentials provided
         if WATSONX_AVAILABLE and api_key and url and project_id:
@@ -90,56 +71,6 @@ class ExplanationAgent:
                 self.model = None
         else:
             logging.info("ExplanationAgent initialized in fallback mode (no LLM)")
-        
-        # Initialize governance components
-        if self.governance_enabled and GOVERNANCE_AVAILABLE:
-            try:
-                self.model_registry = ModelRegistry()
-                self.factsheet_manager = FactsheetManager()
-                self.governance_monitor = GovernanceMonitor()
-                
-                # Register model on first initialization
-                self._register_model_if_needed()
-                
-                logging.info("Governance integration enabled for ExplanationAgent")
-            except Exception as e:
-                logging.error(f"Failed to initialize governance: {e}")
-                self.governance_enabled = False
-        else:
-            logging.info("Governance integration disabled or unavailable")
-    
-    def _register_model_if_needed(self):
-        """Register the Granite model in governance if not already registered."""
-        if not self.model_registry:
-            return
-        
-        try:
-            # Check if model is already registered
-            model_info = self.model_registry.get_model_info(self.MODEL_ID)
-            
-            if not model_info:
-                # Register the model
-                result = self.model_registry.register_model(
-                    model_id=self.MODEL_ID,
-                    model_name="Financial Risk - Granite Explanation Model",
-                    model_type="foundation_model",
-                    provider="IBM",
-                    description="IBM Granite model for generating risk explanations",
-                    use_case_id=os.getenv("WATSONX_GOVERNANCE_USECASE_ID"),
-                    metadata={
-                        "agent": self.agent_name,
-                        "max_tokens": 500,
-                        "temperature": 0.3
-                    }
-                )
-                logging.info(f"Model registration result: {result.get('status')}")
-                
-                # Create AI Factsheet
-                if self.factsheet_manager:
-                    factsheet_result = self.factsheet_manager.create_granite_factsheet()
-                    logging.info(f"Factsheet creation result: {factsheet_result.get('status')}")
-        except Exception as e:
-            logging.error(f"Failed to register model: {e}")
     
     def run(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -224,21 +155,6 @@ class ExplanationAgent:
             end_time = datetime.utcnow()
             execution_time = (end_time - start_time).total_seconds()
             
-            # Log prediction to governance if enabled
-            if self.governance_enabled and self.governance_monitor:
-                try:
-                    self.governance_monitor.log_explanation(
-                        model_id=model_used,
-                        account_id=account_id,
-                        risk_score=risk_score,
-                        risk_level=risk_level,
-                        explanation=explanation,
-                        tokens_used=tokens_used,
-                        execution_time=execution_time
-                    )
-                except Exception as e:
-                    logging.warning(f"Failed to log prediction to governance: {e}")
-            
             return {
                 'status': 'success',
                 'result': result,
@@ -247,8 +163,7 @@ class ExplanationAgent:
                     'execution_time_seconds': round(execution_time, 3),
                     'timestamp': end_time.isoformat(),
                     'model_used': model_used,
-                    'tokens_used': tokens_used,
-                    'governance_logged': self.governance_enabled
+                    'tokens_used': tokens_used
                 }
             }
             
