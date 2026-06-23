@@ -162,7 +162,7 @@
 
 ## FASE 11 · Miglioramenti competitivi (post-deploy)
 
-- ❌ Aggiungi tool `explainRisk` all'agente wxO — espone Granite nel report wxO
+- ✅ Aggiungi tool `explainRisk` all'agente wxO — espone Granite nel report wxO (5 tools, live 23 giu)
 - ❌ watsonx.governance — monitoring AI model fairness/drift su Granite (layer separato, non tocca flusso esistente)
 
 ---
@@ -190,7 +190,7 @@
 | 8 · Deploy IBM Cloud + Granite live | ✅ Completo — endpoint pubblico live | 100% |
 | 9 · Testing | 🔄 Parziale | 15% |
 | 10 · Demo | ❌ Non iniziato | 0% |
-| 11 · Miglioramenti competitivi | ❌ Non iniziato | 0% |
+| 11 · Miglioramenti competitivi | 🔄 Parziale (explainRisk ✅, governance ❌) | 50% |
 
 ---
 
@@ -207,7 +207,7 @@
 | 22 giu (sera) | Granite ibm/granite-4-h-small live su CE | ✅ FATTO |
 | 22 giu (sera) | Script deploy unificato + docs deployment | ✅ FATTO |
 | 22 giu (sera) | Deploy skills + agente su wxO — end-to-end ok | ✅ FATTO |
-| 23 giu | explainRisk tool in wxO agent | ❌ |
+| 23 giu | explainRisk tool in wxO agent | ✅ |
 | 23-24 giu | watsonx.governance integration | ❌ |
 | 24-25 giu | README + script demo curl | ❌ |
 | 25-28 giu | Test end-to-end + slide architettura | ❌ |

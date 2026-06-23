@@ -155,8 +155,7 @@ def main():
     fraud_signals = fraud_result.get('fraud_signals', {})
     
     rec_result = make_api_call("/api/v1/recommend/actions", method="POST",
-                               data={"risk_score": risk_score, "patterns": patterns, 
-                                    "fraud_signals": fraud_signals})
+                               data={"account_id": DEMO_ACCOUNT_ID, "risk_score": risk_score})
     
     if "error" not in rec_result:
         print_success("Recommendations generated!")
@@ -176,8 +175,11 @@ def main():
     fraud_list = [k for k, v in fraud_signals.items() if v] if fraud_signals else []
     
     exp_result = make_api_call("/api/v1/explain", method="POST",
-                               data={"risk_score": risk_score, "patterns": patterns_list,
-                                    "fraud_signals": fraud_list})
+                               data={"account_id": DEMO_ACCOUNT_ID,
+                                     "risk_score": risk_score,
+                                     "risk_level": risk_result.get("risk_level", "low"),
+                                     "aml_patterns": patterns_list,
+                                     "recommendations": fraud_list})
     
     if "error" not in exp_result:
         print_success("Explanation generated!")

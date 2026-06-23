@@ -204,6 +204,77 @@
         }
       }
     },
+    "/api/v1/explain": {
+      "post": {
+        "operationId": "explainRisk",
+        "summary": "AI Risk Explanation Tool",
+        "description": "Generates a natural language explanation of the risk assessment using IBM Granite LLM (ibm/granite-4-h-small). Produces a professional compliance-ready explanation for compliance officers.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["account_id", "risk_score", "risk_level"],
+                "properties": {
+                  "account_id": {
+                    "type": "string",
+                    "description": "The account identifier to explain"
+                  },
+                  "risk_score": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "description": "Risk score from risk assessment"
+                  },
+                  "risk_level": {
+                    "type": "string",
+                    "enum": ["minimal", "low", "medium", "high", "critical"],
+                    "description": "Risk level classification"
+                  },
+                  "aml_patterns": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of detected AML pattern types"
+                  },
+                  "recommendations": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "List of recommended actions"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "AI-generated explanation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "explanation": {
+                      "type": "string",
+                      "description": "Natural language explanation for compliance officers"
+                    },
+                    "model_used": {
+                      "type": "string",
+                      "description": "LLM model used (ibm/granite-4-h-small or fallback)"
+                    },
+                    "fallback_used": {
+                      "type": "boolean",
+                      "description": "Whether fallback rule-based explanation was used"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/recommend/actions": {
       "post": {
         "operationId": "recommendActions",

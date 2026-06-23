@@ -1,4 +1,4 @@
-# Financial Risk Management System
+﻿# Financial Risk Management System
 
 Sistema agentico per l'analisi del rischio finanziario basato su IBM watsonx Orchestrate, deployato su IBM Cloud.
 
@@ -66,8 +66,8 @@ La demo esegue un workflow end-to-end in 6 step:
 │  │     IBM watsonx Orchestrate (eu-de)                    │ │
 │  │  ┌──────────────────────────────────────────────────┐ │ │
 │  │  │  Financial Risk Orchestrator Agent               │ │ │
-│  │  │  - 4 Tools: analyze, assess, detect, recommend   │ │ │
-│  │  │  - LLM: ibm/granite-3-8b-instruct                │ │ │
+│  │  │  - 5 Tools: analyze, assess, detect, recommend, explain   │ │ │
+│  │  │  - explainRisk uses ibm/granite-4-h-small                │ │ │
 │  │  └──────────────────────────────────────────────────┘ │ │
 │  └────────────────────────────────────────────────────────┘ │
 │                              │                               │
