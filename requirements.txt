@@ -6,6 +6,4 @@ pydantic-settings
 python-dotenv
 ibm-watsonx-orchestrate
 ibm-watsonx-ai>=0.2.0
-ibm-aigov-facts-client>=1.0.0
-ibm-watson-openscale>=3.0.0
 requests
