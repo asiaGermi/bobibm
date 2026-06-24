@@ -373,12 +373,19 @@ def format_explanation(result: Dict[str, Any]) -> str:
 
 async def main():
     """Run the MCP server."""
-    async with stdio_server() as (read_stream, write_stream):
-        await app.run(
-            read_stream,
-            write_stream,
-            app.create_initialization_options()
-        )
+    global http_client
+    try:
+        async with stdio_server() as (read_stream, write_stream):
+            await app.run(
+                read_stream,
+                write_stream,
+                app.create_initialization_options()
+            )
+    finally:
+        # Cleanup HTTP client on shutdown
+        if http_client is not None:
+            await http_client.aclose()
+            http_client = None
 
 
 if __name__ == "__main__":
