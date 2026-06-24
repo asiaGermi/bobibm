@@ -268,5 +268,47 @@ class GovernanceMonitor:
             logger.error(f"Failed to fetch cloud records: {exc}")
             return {"error": str(exc), "records": []}
 
+    def get_audit_entries(self, limit: int = 100, account_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Return audit entries: cloud records if available, else local log."""
+        entries = []
+        if self.enabled:
+            raw = self.get_cloud_records(limit=limit)
+            records = raw.get("records", [])
+            for r in records:
+                entity = r.get("entity", r)
+                req = entity.get("request", {})
+                resp = entity.get("response", {})
+                req_fields = req.get("fields", [])
+                req_values = req.get("values", [[]])[0]
+                resp_fields = resp.get("fields", [])
+                resp_values = resp.get("values", [[]])[0]
+                req_data = dict(zip(req_fields, req_values))
+                resp_data = dict(zip(resp_fields, resp_values))
+                meta = r.get("metadata", {})
+                entry = {
+                    "scoring_id": meta.get("id", entity.get("scoring_id", "")),
+                    "timestamp": entity.get("scoring_timestamp", meta.get("created_at", "")),
+                    "type": "risk_assessment",
+                    "account_id": req_data.get("account_id", ""),
+                    "lookback_days": req_data.get("lookback_days", 30),
+                    "risk_score": resp_data.get("risk_score", 0),
+                    "risk_level": resp_data.get("risk_level", ""),
+                    "aml_patterns_count": resp_data.get("aml_patterns_count", 0),
+                    "transaction_count": resp_data.get("transaction_count", 0),
+                    "source": "cloud",
+                }
+                entries.append(entry)
+
+        if not entries:
+            entries = self.get_recent_logs(limit=limit, log_type="risk_assessment", account_id=account_id)
+            for e in entries:
+                e["source"] = "local"
+
+        if account_id:
+            entries = [e for e in entries if e.get("account_id") == account_id]
+
+        entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+        return entries[:limit]
+
 
 # Made with Bob

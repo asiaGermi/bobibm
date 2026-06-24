@@ -848,37 +848,16 @@ async def governance_audit_export(account_id: Optional[str] = None):
 async def governance_audit(account_id: Optional[str] = None, limit: int = 50):
     if governance_monitor is None:
         return {"entries": [], "total": 0, "account_id": account_id, "source": "unavailable"}
-    logs = governance_monitor.get_recent_logs(limit=limit, account_id=account_id)
-    risk_logs = [l for l in logs if l.get("type") == "risk_assessment"]
-    expl_logs = [l for l in logs if l.get("type") == "explanation"]
-    entries = []
-    for r in risk_logs:
-        entry = {
-            "scoring_id": r.get("scoring_id"),
-            "timestamp": r.get("timestamp"),
-            "account_id": r.get("account_id"),
-            "type": "risk_assessment",
-            "risk_score": r.get("risk_score"),
-            "risk_level": r.get("risk_level"),
-            "aml_patterns_count": r.get("aml_patterns_count", 0),
-            "transaction_count": r.get("transaction_count", 0),
-            "lookback_days": r.get("lookback_days", 30),
-            "system": "Financial Risk Management API v1.0",
-            "model": "rule-based + ibm/granite-4-h-small",
-            "data_source": "IBM AML Dataset (HI-Small_Trans_sample.csv)",
-        }
-        expl = next((e for e in expl_logs if e.get("account_id") == r.get("account_id")
-                     and e.get("timestamp", "") >= r.get("timestamp", "")), None)
-        if expl:
-            entry["ai_model_used"] = expl.get("model_used")
-            entry["ai_fallback"] = expl.get("fallback_used")
-        entries.append(entry)
-    entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    entries = governance_monitor.get_audit_entries(limit=limit, account_id=account_id)
+    for e in entries:
+        e.setdefault("system", "Financial Risk Management API v1.0")
+        e.setdefault("data_source", "IBM AML Dataset (HI-Small_Trans_sample.csv)")
+    source = entries[0].get("source", "local") if entries else "local"
     return {
         "entries": entries,
         "total": len(entries),
         "account_id": account_id,
-        "source": "local_log",
+        "source": source,
     }
 
 
