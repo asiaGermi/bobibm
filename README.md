@@ -21,6 +21,13 @@ Sistema multi-agente per l'analisi automatizzata del rischio finanziario che uti
 https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud
 ```
 
+### 🖥️ Dashboard Web
+```
+https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/dashboard
+```
+Dashboard interattiva 4-tab: Analisi Rischio · Strumenti · Governance · Audit Trail  
+Tutti e 10 gli endpoint API sono accessibili direttamente dalla GUI.
+
 ---
 
 ## 🚀 Quick Demo
@@ -77,7 +84,7 @@ La demo esegue un workflow end-to-end in 6 step:
 │  │     IBM Cloud Code Engine (eu-de)                      │ │
 │  │  ┌──────────────────────────────────────────────────┐ │ │
 │  │  │  FastAPI Application                             │ │ │
-│  │  │  - 6 REST endpoints                              │ │ │
+│  │  │  - 10 REST endpoints                             │ │ │
 │  │  │  - 5 Specialized Agents                          │ │ │
 │  │  │  - Auto-scaling (1-10 instances)                 │ │ │
 │  │  └──────────────────────────────────────────────────┘ │ │
@@ -85,9 +92,16 @@ La demo esegue un workflow end-to-end in 6 step:
 │                              │                               │
 │                              ▼                               │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │     IBM watsonx.ai (us-south)                          │ │
+│  │     IBM watsonx.ai (eu-de)                             │ │
 │  │  - Model: ibm/granite-4-h-small                        │ │
 │  │  - Chat API for explanations                           │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                              │                               │
+│                              ▼                               │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │     IBM Watson OpenScale / watsonx.governance (eu-de)  │ │
+│  │  - Payload logging ogni analisi                        │ │
+│  │  - Audit trail permanente su cloud                     │ │
 │  └────────────────────────────────────────────────────────┘ │
 │                                                               │
 └─────────────────────────────────────────────────────────────┘
@@ -137,14 +151,19 @@ Spiegazioni in linguaggio naturale via IBM watsonx.ai Granite:
 
 ## 🔌 API Endpoints
 
-| Endpoint | Method | Descrizione |
-|----------|--------|-------------|
-| `/health` | GET | Health check e status sistema |
-| `/api/v1/analyze/transaction` | POST | Analizza transazioni e rileva pattern AML |
-| `/api/v1/assess/risk` | POST | Calcola risk score e identifica fattori |
-| `/api/v1/detect/fraud` | POST | Rileva fraud signals e anomalie |
-| `/api/v1/recommend/actions` | POST | Genera raccomandazioni |
-| `/api/v1/explain` | POST | Genera spiegazione (Granite LLM) |
+| Endpoint | Method | Tab GUI | Descrizione |
+|----------|--------|---------|-------------|
+| `/health` | GET | — | Health check e status sistema |
+| `/api/v1/assess/risk` | POST | 📊 Analisi | Risk score + pattern AML da CSV |
+| `/api/v1/explain` | POST | 📊 Analisi | Spiegazione IBM Granite (auto) |
+| `/api/v1/analyze/transaction` | POST | 🔍 Strumenti | Analisi singola transazione |
+| `/api/v1/detect/fraud` | POST | 🔍 Strumenti | Fraud signals e anomalie |
+| `/api/v1/recommend/actions` | POST | 🔍 Strumenti | Azioni (BLOCK, ALERT, REVIEW, MONITOR) |
+| `/api/v1/governance/metrics` | GET | 🛡️ Governance | Metriche aggregate watsonx.governance |
+| `/api/v1/governance/logs` | GET | 🛡️ Governance | Log sessione corrente |
+| `/api/v1/governance/cloud-records` | GET | 🛡️ Governance | Record IBM Watson OpenScale cloud |
+| `/api/v1/governance/audit` | GET | 📋 Audit | Audit trail (filtro per account) |
+| `/api/v1/governance/audit/export` | GET | 📋 Audit | Export CSV per compliance |
 
 **OpenAPI Spec:** `https://[endpoint]/docs`
 

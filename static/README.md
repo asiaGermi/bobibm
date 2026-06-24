@@ -1,280 +1,153 @@
 # 🏦 Financial Risk Dashboard
 
-Dashboard interattiva per l'analisi del rischio finanziario e il rilevamento AML (Anti-Money Laundering).
+Dashboard interattiva per l'analisi del rischio finanziario AML (Anti-Money Laundering), powered by IBM watsonx.ai e IBM watsonx.governance.
 
-## 📋 Panoramica
-
-Questa dashboard fornisce un'interfaccia web moderna e intuitiva per:
-- Analizzare il rischio delle transazioni
-- Visualizzare metriche di rischio con grafici interattivi
-- Ottenere spiegazioni AI generate da IBM Granite
-- Monitorare pattern AML in tempo reale
-
-## 🚀 Caratteristiche
-
-### 1. **Input Interattivo**
-- Campo Account ID personalizzabile
-- Slider per Risk Score (0.0 - 1.0)
-- Selezione Risk Level (Low, Medium, High, Critical)
-- Configurazione endpoint API dinamica
-
-### 2. **Visualizzazioni Grafiche**
-- **Risk Score Distribution**: Grafico a ciambella che mostra la distribuzione del rischio
-- **Risk Level Breakdown**: Grafico a barre per confrontare i livelli di rischio
-- Grafici interattivi con Chart.js 4.4.0
-
-### 3. **Metriche in Tempo Reale**
-- Risk Score percentuale
-- Risk Level classificato
-- Account ID analizzato
-- Timestamp dell'analisi
-
-### 4. **AI Explanation**
-- Spiegazioni generate da IBM watsonx.ai Granite
-- Linguaggio naturale per compliance officer
-- Fallback automatico se LLM non disponibile
-
-## 🛠️ Tecnologie Utilizzate
-
-- **HTML5** + **CSS3**: Interfaccia responsive
-- **JavaScript ES6+**: Logica client-side
-- **Chart.js 4.4.0**: Visualizzazioni grafiche
-- **Fetch API**: Chiamate REST asincrone
-- **IBM watsonx.governance**: Backend AI
-
-## 📦 Struttura File
-
-```
-static/
-├── index.html          # Dashboard principale
-└── README.md          # Questa documentazione
-```
-
-## 🔧 Configurazione
-
-### Endpoint API
-
-L'endpoint predefinito è configurato per IBM Code Engine:
-```
-https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/api/v1/explain
-```
-
-Per ambiente locale, modifica l'URL nel campo "API Endpoint":
-```
-http://localhost:8000/api/v1/explain
-```
-
-### Parametri Richiesta
-
-La dashboard invia una richiesta POST con il seguente payload:
-
-```json
-{
-  "account_id": "ACC-123",
-  "risk_score": 0.75,
-  "risk_level": "high",
-  "aml_patterns": [],
-  "recommendations": []
-}
-```
-
-### Risposta Attesa
-
-```json
-{
-  "account_id": "ACC-123",
-  "explanation": "Spiegazione generata da IBM Granite...",
-  "model_used": "ibm/granite-13b-chat-v2",
-  "generated_at": "2024-01-15T10:30:00Z",
-  "fallback_used": false
-}
-```
-
-## 🎨 Design
-
-### Palette Colori
-
-- **Primary Gradient**: `#667eea` → `#764ba2`
-- **Success (Low Risk)**: `#28a745`
-- **Warning (Medium Risk)**: `#ffc107`
-- **Danger (High Risk)**: `#dc3545`
-- **Critical**: `#6f42c1`
-- **IBM Blue**: `#0f62fe`
-
-### Responsive Design
-
-La dashboard è completamente responsive e si adatta a:
-- Desktop (>1400px)
-- Tablet (768px - 1400px)
-- Mobile (<768px)
-
-## 🚀 Utilizzo
-
-### 1. Accesso alla Dashboard
-
-**Produzione (IBM Code Engine):**
-```
-https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/dashboard
-```
-
-**Locale:**
-```bash
-# Avvia l'API
-python run_api.py
-
-# Apri nel browser
-http://localhost:8000/dashboard
-```
-
-### 2. Analisi Rischio
-
-1. **Inserisci Account ID**: es. `ACC-123`, `ACC-456`
-2. **Imposta Risk Score**: valore tra 0.0 (basso) e 1.0 (alto)
-3. **Seleziona Risk Level**: Low, Medium, High, Critical
-4. **Clicca "Analizza Rischio"**
-
-### 3. Interpretazione Risultati
-
-#### Metriche
-- **Risk Score**: Percentuale di rischio (0-100%)
-- **Risk Level**: Classificazione categorica
-- **Account ID**: Identificativo cliente analizzato
-- **Timestamp**: Ora dell'analisi
-
-#### Grafici
-- **Risk Score Distribution**: Mostra quanto del rischio totale è presente
-- **Risk Level Breakdown**: Confronta il livello attuale con gli altri
-
-#### AI Explanation
-Spiegazione dettagliata generata da IBM Granite che include:
-- Motivazione del risk score
-- Pattern AML rilevati
-- Raccomandazioni per compliance officer
-
-## 🔍 Esempi di Test
-
-### Test 1: Basso Rischio
-```
-Account ID: ACC-001
-Risk Score: 0.25
-Risk Level: low
-```
-**Risultato Atteso**: Grafico verde, spiegazione rassicurante
-
-### Test 2: Rischio Medio
-```
-Account ID: ACC-002
-Risk Score: 0.55
-Risk Level: medium
-```
-**Risultato Atteso**: Grafico giallo, raccomandazione di monitoraggio
-
-### Test 3: Alto Rischio
-```
-Account ID: ACC-003
-Risk Score: 0.85
-Risk Level: high
-```
-**Risultato Atteso**: Grafico rosso, alert e raccomandazioni urgenti
-
-### Test 4: Rischio Critico
-```
-Account ID: ACC-004
-Risk Score: 0.95
-Risk Level: critical
-```
-**Risultato Atteso**: Grafico viola, blocco immediato raccomandato
-
-## 🐛 Troubleshooting
-
-### Errore: "Errore nella chiamata API"
-
-**Causa**: Endpoint API non raggiungibile o non configurato
-
-**Soluzione**:
-1. Verifica che l'API sia in esecuzione
-2. Controlla l'URL dell'endpoint nel campo "API Endpoint"
-3. Verifica la connessione di rete
-4. Controlla i log del browser (F12 → Console)
-
-### Errore: "Nessuna spiegazione disponibile"
-
-**Causa**: Backend non ha restituito una spiegazione
-
-**Soluzione**:
-1. Verifica che watsonx.ai sia configurato (`.env`)
-2. Controlla i log dell'API per errori
-3. Verifica che `WATSONX_API_KEY` e `WATSONX_PROJECT_ID` siano impostati
-
-### Grafici non visualizzati
-
-**Causa**: Chart.js non caricato o errore JavaScript
-
-**Soluzione**:
-1. Verifica la connessione internet (Chart.js è caricato da CDN)
-2. Controlla la console del browser per errori JavaScript
-3. Ricarica la pagina (Ctrl+F5)
-
-## 📊 Metriche Performance
-
-- **Tempo di caricamento**: <2 secondi
-- **Tempo risposta API**: 2-5 secondi (con Granite)
-- **Tempo risposta API**: <1 secondo (fallback)
-- **Dimensione pagina**: ~15KB (HTML+CSS+JS)
-- **Dipendenze esterne**: Chart.js (CDN)
-
-## 🔐 Sicurezza
-
-### CORS
-L'API è configurata con CORS per accettare richieste da qualsiasi origine (`*`).
-In produzione, limitare a domini specifici.
-
-### Validazione Input
-- Account ID: stringa non vuota
-- Risk Score: numero tra 0.0 e 1.0
-- Risk Level: enum (low, medium, high, critical)
-
-### HTTPS
-In produzione, la dashboard usa HTTPS tramite IBM Code Engine.
-
-## 🎯 Roadmap Future
-
-- [ ] Autenticazione utente (IBM App ID)
-- [ ] Storico analisi per account
-- [ ] Export PDF dei report
-- [ ] Grafici aggiuntivi (trend temporali)
-- [ ] Notifiche real-time
-- [ ] Integrazione con watsonx.governance UI
-- [ ] Multi-lingua (EN, IT, ES, FR)
-- [ ] Dark mode
-
-## 📝 Note per Demo IBM
-
-### Cosa Mostrare
-1. ✅ Interfaccia moderna e professionale
-2. ✅ Grafici interattivi con Chart.js
-3. ✅ Chiamata API in tempo reale
-4. ✅ Spiegazione AI da IBM Granite
-5. ✅ Responsive design (mobile/desktop)
-
-### Scenari Demo
-1. **Scenario 1**: Analisi basso rischio → Mostra grafico verde
-2. **Scenario 2**: Analisi alto rischio → Mostra alert rosso + spiegazione AI
-3. **Scenario 3**: Cambio endpoint → Mostra flessibilità configurazione
-
-### Punti di Forza
-- ✅ Zero dipendenze backend (solo HTML+JS)
-- ✅ Integrazione seamless con API REST
-- ✅ Visualizzazioni professionali
-- ✅ AI-powered explanations
-- ✅ Production-ready su IBM Cloud
-
-## 📞 Supporto
-
-Per problemi o domande:
-- Repository: https://github.com/asiaGermi/bobibm
-- API Docs: https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/api/v1/docs
+**URL Produzione:** `https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/dashboard`
 
 ---
 
-**Made with ❤️ for IBM watsonx.governance Demo**
+## 📋 Struttura: 4 Tab
+
+### 📊 Tab 1 — Analisi Rischio
+Flusso automatico in 2 step per analizzare un conto bancario.
+
+**Input:**
+- Account ID (es. `100428660`)
+- Periodo analisi in giorni (default: 30)
+
+**Step 1 — `/api/v1/assess/risk`:**
+Calcola il risk score con formula ponderata su 5 fattori dal CSV:
+1. Frequenza transazioni (anomalie volume)
+2. Importi anomali (deviazioni statistiche)
+3. Valute ad alto rischio (non-USD)
+4. Storia laundering (flag `Is Laundering = 1`)
+5. Complessità rete (numero controparti)
+
+**Step 2 — `/api/v1/explain` (automatico):**
+Invia il risultato a IBM watsonx.ai (`ibm/granite-4-h-small`) → genera spiegazione in linguaggio naturale per compliance officer. Fallback rule-based se Granite non disponibile.
+
+**Output visualizzato:**
+- Risk Score (%) + Risk Level (LOW/MEDIUM/HIGH/CRITICAL) — derivato automaticamente dallo score
+- Pattern AML rilevati (fan-out, smurfing, fan-in, circular) con confidenza
+- AI Explanation (IBM Granite) con testo generato
+- Grafici: Risk Score Distribution (donut) + Risk Level Breakdown (bar)
+- Statistiche transazioni: totali, volume, media, massimo
+
+---
+
+### 🔍 Tab 2 — Strumenti
+Tre API esposte singolarmente per analisi avanzate.
+
+**Analisi Singola Transazione — `POST /api/v1/analyze/transaction`**
+- Input: Account ID + Timestamp + Periodo
+- Output: dettaglio transazione, anomalie, risk info
+
+**Raccomandazioni Azioni — `POST /api/v1/recommend/actions`**
+- Input: Account ID + Periodo
+- Output: lista azioni prioritizzate (BLOCK, ALERT, REVIEW, MONITOR) con motivazione
+
+**Fraud Detection — `POST /api/v1/detect/fraud`**
+- Input: Account ID + Timestamp + Periodo
+- Output: fraud risk level, anomaly score, segnali di frode rilevati
+
+---
+
+### 🛡️ Tab 3 — Governance
+Monitoraggio IBM watsonx.governance in tempo reale.
+
+**Metriche aggregate:**
+- Totale analisi rischio eseguite
+- Totale spiegazioni AI generate
+- Risk score medio su tutte le analisi
+- Status connessione IBM Watson OpenScale cloud
+
+**Log locali recenti:**
+Ultimi record dalla sessione corrente (in-memory).
+
+**Record IBM OpenScale Cloud:**
+Record permanenti salvati su IBM Watson OpenScale — persistenti anche dopo restart del pod.
+
+> Ogni analisi eseguita viene automaticamente loggata su IBM Watson OpenScale cloud (subscription ID: `019ef96a-44d2-7ebf-85e4-c9c53923009e`).
+
+---
+
+### 📋 Tab 4 — Audit Trail
+Registro di tutte le analisi per compliance e tracciabilità.
+
+**Ricerca:** filtra per Account ID (opzionale — lascia vuoto per vedere tutto)
+
+**Tabella risultati:**
+| Campo | Descrizione |
+|---|---|
+| Data / Ora | Timestamp preciso dell'analisi |
+| Account ID | Conto analizzato |
+| Risk Score | Score calcolato (%) |
+| Risk Level | Livello derivato automaticamente |
+| Pattern AML | Numero schemi rilevati |
+| Transazioni | Transazioni analizzate |
+| Periodo | Giorni di lookback |
+| Modello AI | Granite o fallback |
+| ID Analisi | UUID univoco per tracciabilità |
+
+**Export CSV:** scarica il registro come file CSV per reportistica esterna.
+
+> Risponde alla domanda delle autorità: *"Quando? Quale sistema? Con quali dati?"*
+
+---
+
+## 🔧 API Endpoint Completi
+
+| Endpoint | Metodo | Tab | Descrizione |
+|---|---|---|---|
+| `/api/v1/assess/risk` | POST | Analisi Rischio | Risk score + pattern AML dal CSV |
+| `/api/v1/explain` | POST | Analisi Rischio | Spiegazione AI via IBM Granite |
+| `/api/v1/analyze/transaction` | POST | Strumenti | Analisi singola transazione |
+| `/api/v1/recommend/actions` | POST | Strumenti | Azioni raccomandate |
+| `/api/v1/detect/fraud` | POST | Strumenti | Fraud detection |
+| `/api/v1/governance/metrics` | GET | Governance | Metriche aggregate |
+| `/api/v1/governance/logs` | GET | Governance | Log sessione corrente |
+| `/api/v1/governance/cloud-records` | GET | Governance | Record IBM OpenScale |
+| `/api/v1/governance/audit` | GET | Audit Trail | Query audit (filtro account) |
+| `/api/v1/governance/audit/export` | GET | Audit Trail | Export CSV |
+
+Swagger UI: `/api/v1/docs`
+
+---
+
+## 🎨 Design
+
+- **Font:** IBM Plex Sans
+- **Colori:** gradient IBM (`#667eea` → `#764ba2`), IBM Blue (`#0f62fe`)
+- **Risk colors:** LOW `#28a745` · MEDIUM `#ffc107` · HIGH `#dc3545` · CRITICAL `#6f42c1`
+- **Responsive:** Desktop / Tablet / Mobile
+
+---
+
+## 📊 Fonte Dati
+
+- **CSV runtime:** `data/raw/HI-Small_Trans_sample.csv` (~1.4MB, ~15k transazioni)
+- **Dataset originale:** IBM HI-Small_Trans.csv (453MB, escluso dall'immagine Docker)
+- **Schema:** `Timestamp, From Bank, Account, To Bank, Account, Amount Received, Receiving Currency, Amount Paid, Payment Currency, Payment Format, Is Laundering`
+
+---
+
+## 🚀 Account di Test
+
+| Account ID | Caratteristiche |
+|---|---|
+| `100428660` | Fan-out (122 account) + Smurfing (9 tx sotto $10k) → Risk 34% LOW |
+| `8000EBD30` | Transazioni normali → Risk ~0% LOW |
+
+---
+
+## 🔐 Tecnologie IBM
+
+- **IBM Code Engine** — deploy containerizzato (buildpacks da GitHub)
+- **IBM Container Registry** — immagine Docker privata
+- **IBM watsonx.ai** — IBM Granite `ibm/granite-4-h-small` per spiegazioni
+- **IBM Watson OpenScale** — governance, payload logging, audit trail cloud
+
+---
+
+**Repository:** https://github.com/asiaGermi/bobibm  
+**API Docs:** https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/api/v1/docs

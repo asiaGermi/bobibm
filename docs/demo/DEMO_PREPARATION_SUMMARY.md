@@ -1,301 +1,159 @@
-# Demo Preparation Summary - 23 Giugno 2026
+# Demo Preparation Summary — 24 Giugno 2026
 
-## 📋 Stato Attuale
+## ✅ Stato Attuale: PRONTO PER DEMO
 
-### ✅ Completato Oggi
-
-1. **Slide Architetturali** (`docs/demo/ARCHITECTURE_SLIDES.md`)
-   - 13 slide complete con diagrammi architetturali
-   - Descrizione dettagliata di tutti i componenti IBM
-   - Flusso dati end-to-end
-   - Metriche e performance
-   - Differenziatori competitivi
-   - Roadmap futura
-
-2. **Script Demo Python** (`scripts/demo.py`)
-   - Script interattivo completo con 6 step
-   - Output colorato e formattato
-   - Chiamate a tutti e 6 gli endpoint API
-   - Report consolidato finale
-   - 449 righe di codice
-
-3. **Script Demo PowerShell** (`scripts/demo.ps1`)
-   - Versione Windows-native dello script
-   - Stessa funzionalità dello script Python
-   - Output colorato per PowerShell
-   - 509 righe di codice
-
-4. **Script Demo Automatico** (`scripts/demo_auto.py`)
-   - Versione non-interattiva per testing
-   - Timeout aumentato a 30 secondi
-   - Gestione errori Unicode per Windows
-   - 186 righe di codice
-
-5. **Documentazione Demo** (`scripts/DEMO_README.md`)
-   - Guida completa all'uso degli script
-   - Esempi di output
-   - Troubleshooting
-   - Personalizzazione
-   - 390 righe di documentazione
-
-## 📊 Materiali Creati
-
-### Slide Architetturali (638 righe)
-```
-docs/demo/ARCHITECTURE_SLIDES.md
-├── Slide 1: Overview Soluzione
-├── Slide 2: Architettura High-Level (diagramma ASCII)
-├── Slide 3: Flusso Dati End-to-End
-├── Slide 4: Componenti IBM Utilizzati
-├── Slide 5: Agenti Specializzati - Dettaglio
-├── Slide 6: API REST Endpoints
-├── Slide 7: watsonx Orchestrate Integration
-├── Slide 8: Differenziatori Competitivi
-├── Slide 9: Metriche e Performance
-├── Slide 10: Demo Flow
-├── Slide 11: Roadmap e Future Enhancements
-├── Slide 12: Team e Tecnologie
-├── Slide 13: Conclusioni
-└── Appendice: Comandi Demo
-```
-
-### Script Demo (1,544 righe totali)
-```
-scripts/
-├── demo.py (449 righe) - Script Python interattivo
-├── demo.ps1 (509 righe) - Script PowerShell
-├── demo_auto.py (186 righe) - Script automatico per testing
-└── DEMO_README.md (390 righe) - Documentazione completa
-```
-
-## 🎯 Workflow Demo
-
-### Step 1: Health Check
-```bash
-GET /health
-→ Verifica status API, data layer, transazioni disponibili
-```
-
-### Step 2: Risk Assessment
-```bash
-POST /api/v1/assess/risk
-→ Calcola risk score (0.0-1.0) con 5 fattori ponderati
-```
-
-### Step 3: Fraud Detection
-```bash
-POST /api/v1/detect/fraud
-→ Rileva fraud signals, anomalie temporali, laundering history
-```
-
-### Step 4: Transaction Analysis
-```bash
-POST /api/v1/analyze/transaction
-→ Rileva pattern AML (fan-out, fan-in, circular, smurfing)
-```
-
-### Step 5: Recommendations
-```bash
-POST /api/v1/recommend/actions
-→ Genera azioni (ALERT, REVIEW, BLOCK, MONITOR)
-```
-
-### Step 6: Explanation (Granite LLM)
-```bash
-POST /api/v1/explain
-→ Spiegazione in linguaggio naturale via IBM watsonx.ai
-```
-
-## 🚀 Come Eseguire la Demo
-
-### Opzione 1: Script Python Interattivo
-```bash
-python scripts/demo.py
-# Premi Enter quando richiesto
-```
-
-### Opzione 2: Script PowerShell
-```powershell
-.\scripts\demo.ps1
-# Premi Enter quando richiesto
-```
-
-### Opzione 3: Script Automatico (per testing)
-```bash
-python scripts/demo_auto.py
-# Esecuzione automatica senza input
-```
-
-## 📝 Prossimi Passi
-
-### 1. Test con API Live ⏳
-**Problema Attuale:** API potrebbe essere in sleep mode (timeout)
-**Soluzione:** 
-- Risveglia l'API con una chiamata curl
-- Oppure aspetta che si riattivi automaticamente
-- Script già configurato con timeout 30 secondi
-
-```bash
-# Risveglia API
-curl https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/health
-
-# Poi esegui demo
-python scripts/demo_auto.py
-```
-
-### 2. Aggiungere Tool explainRisk a wxO Agent 📋
-**Obiettivo:** Esporre l'endpoint `/api/v1/explain` come tool in watsonx Orchestrate
-
-**File da modificare:**
-- `openapi_spec.json` - Già include l'endpoint explain
-- `agents/financial_risk_orchestrator.yaml` - Aggiungere `explainRisk` ai tools
-
-**Comando deploy:**
-```bash
-orchestrate tools import -k openapi -f openapi_spec.json
-orchestrate agents import -f agents/financial_risk_orchestrator.yaml
-```
-
-### 3. Aggiornare README Principale 📄
-**Cosa aggiungere:**
-- Link alle slide architetturali
-- Istruzioni per eseguire la demo
-- Link agli script demo
-- Sezione "Quick Demo" nel README.md
-
-### 4. Video Demo (Opzionale) 🎥
-**Quando:** Dopo che il frontend del collega è pronto
-**Contenuto:**
-- Registrazione esecuzione script demo
-- Narrazione che spiega ogni step
-- Mostra UI watsonx Orchestrate
-- Mostra risultati consolidati
-
-## 🎨 Slide Architetturali - Highlights
-
-### Diagramma Architettura
-```
-IBM Cloud Infrastructure
-├── watsonx Orchestrate (eu-de)
-│   ├── Financial Risk Orchestrator Agent
-│   └── 4 Skills (analyzeTransaction, assessRisk, detectFraud, recommendActions)
-├── IBM Cloud Code Engine (eu-de)
-│   ├── FastAPI Application (6 endpoints)
-│   └── 5 Specialized Agents
-└── IBM watsonx.ai (us-south)
-    └── Granite LLM (ibm/granite-4-h-small)
-```
-
-### Differenziatori Competitivi
-1. **Multi-Agent Orchestration** - 5 agenti specializzati
-2. **IBM watsonx.ai Granite** - LLM enterprise per spiegazioni
-3. **Production-Ready** - Auto-scaling, monitoring, OpenAPI
-4. **Data-Driven** - IBM Synthetic Data Sets, algoritmi AML
-5. **Enterprise Integration** - REST API standard, integrabile
-
-### Metriche
-- API Response Time: < 500ms (P95)
-- Orchestrator Workflow: < 3s (end-to-end)
-- Data Layer: 15,000+ transactions
-- Uptime: 99.9% (IBM Cloud SLA)
-- AML Pattern Detection: 95%+ precision
-
-## 📞 Supporto e Troubleshooting
-
-### Problema: API Timeout
-**Causa:** API in sleep mode su Code Engine
-**Soluzione:** 
-```bash
-# Risveglia con health check
-curl https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/health
-```
-
-### Problema: Unicode Error (Windows)
-**Causa:** Console Windows non supporta UTF-8
-**Soluzione:** Script già aggiornato con fallback ASCII
-
-### Problema: Script non trova requests
-**Causa:** Libreria non installata
-**Soluzione:**
-```bash
-pip install requests
-```
-
-## 🎯 Checklist Pre-Demo
-
-- [x] Slide architetturali create
-- [x] Script demo Python creato
-- [x] Script demo PowerShell creato
-- [x] Documentazione demo completa
-- [ ] Test script con API live
-- [ ] Tool explainRisk aggiunto a wxO
-- [ ] README principale aggiornato
-- [ ] Video demo (opzionale, con frontend)
-
-## 📈 Statistiche
-
-### Codice Scritto Oggi
-- **Slide:** 638 righe (Markdown)
-- **Script Python:** 449 + 186 = 635 righe
-- **Script PowerShell:** 509 righe
-- **Documentazione:** 390 righe
-- **Totale:** ~2,172 righe
-
-### Tempo Stimato
-- Creazione materiali: ~2 ore
-- Testing e refinement: ~30 minuti
-- Totale: ~2.5 ore
-
-### File Creati
-1. `docs/demo/ARCHITECTURE_SLIDES.md`
-2. `scripts/demo.py`
-3. `scripts/demo.ps1`
-4. `scripts/demo_auto.py`
-5. `scripts/DEMO_README.md`
-6. `docs/demo/DEMO_PREPARATION_SUMMARY.md` (questo file)
-
-## 🎉 Conclusione
-
-**Stato:** Materiali demo pronti al 90%
-
-**Cosa Manca:**
-1. Test finale con API live (dipende da API wake-up)
-2. Tool explainRisk in wxO (5 minuti)
-3. Update README principale (10 minuti)
-
-**Pronto per Demo:** SÌ ✅
-- Slide complete e professionali
-- Script demo funzionanti (testati localmente)
-- Documentazione completa
-- Workflow end-to-end definito
-
-**Quando Arriva il Frontend:**
-- Integra facilmente usando gli stessi endpoint API
-- Script demo servono come riferimento per chiamate API
-- Workflow già testato e documentato
-
-## 📅 Timeline
-
-**Oggi (23 Giugno):**
-- ✅ Slide architetturali
-- ✅ Script demo (Python + PowerShell)
-- ✅ Documentazione
-
-**Domani (24 Giugno):**
-- [ ] Test con API live
-- [ ] Tool explainRisk in wxO
-- [ ] Update README
-
-**25-28 Giugno:**
-- [ ] Refinement basato su feedback
-- [ ] Integrazione frontend (quando pronto)
-- [ ] Video demo (opzionale)
-
-**1 Luglio:**
-- 🎯 **DEMO DAY**
+### Sistema in produzione
+**URL:** `https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud`  
+**Dashboard:** `/dashboard`  
+**API Docs:** `/api/v1/docs`
 
 ---
 
-**Preparato da:** IBM Bob (AI Assistant)
-**Data:** 23 Giugno 2026
-**Versione:** 1.0
+## 🏗️ Architettura Attuale
+
+```
+IBM Cloud Infrastructure
+├── IBM Code Engine (eu-de)
+│   ├── FastAPI Application (10 endpoint REST)
+│   ├── 5 Agenti Specializzati (Risk, Fraud, Recommend, Explanation, Orchestrator)
+│   └── Dashboard web 4-tab (static/index.html)
+├── IBM Container Registry (eu-de)
+│   └── private.de.icr.io/financial-risk/financial-risk-management:latest
+├── IBM watsonx.ai (eu-de)
+│   └── ibm/granite-4-h-small — spiegazioni linguaggio naturale
+└── IBM Watson OpenScale / watsonx.governance (eu-de)
+    ├── Data Mart: bc2c304b-0513-4bad-832c-6ecf916274af
+    ├── Subscription: 019ef96a-44d2-7ebf-85e4-c9c53923009e
+    └── Payload Dataset: 019ef96a-4884-7ded-8911-4b3219e64327
+```
+
+---
+
+## 📊 Dashboard — 4 Tab
+
+### Tab 1: 📊 Analisi Rischio
+**Flusso automatico 2-step:**
+1. Inserisci Account ID → click "Analizza Rischio"
+2. Step 1: `POST /assess/risk` → calcola score da CSV → mostra metriche + AML patterns
+3. Step 2: `POST /explain` → IBM Granite genera spiegazione → mostra testo AI
+
+**Account di test consigliati:**
+- `100428660` → Risk 34.2% LOW, 2 pattern (fan-out + smurfing)
+- `8000EBD30` → Risk ~0% LOW, 0 pattern
+
+### Tab 2: 🔍 Strumenti
+3 API esposte con form interattivi:
+- **Analisi Transazione** → `POST /analyze/transaction`
+- **Raccomandazioni** → `POST /recommend/actions` (BLOCK, ALERT, REVIEW, MONITOR)
+- **Fraud Detection** → `POST /detect/fraud`
+
+### Tab 3: 🛡️ Governance
+Monitoring IBM watsonx.governance in tempo reale:
+- Metriche aggregate (totale analisi, score medio, status cloud)
+- Log sessione corrente
+- Record permanenti da IBM Watson OpenScale cloud
+
+### Tab 4: 📋 Audit Trail
+Risponde alle domande delle autorità: *"Quando? Quale sistema? Con quali dati?"*
+- Ricerca per Account ID
+- Tabella con timestamp, score, level, modello AI, ID univoco analisi
+- Export CSV per reportistica esterna
+
+---
+
+## 🔌 Endpoint API Completi
+
+| # | Endpoint | Metodo | Esposto in GUI |
+|---|---|---|---|
+| 1 | `/api/v1/assess/risk` | POST | ✅ Tab Analisi |
+| 2 | `/api/v1/explain` | POST | ✅ Tab Analisi (auto) |
+| 3 | `/api/v1/analyze/transaction` | POST | ✅ Tab Strumenti |
+| 4 | `/api/v1/recommend/actions` | POST | ✅ Tab Strumenti |
+| 5 | `/api/v1/detect/fraud` | POST | ✅ Tab Strumenti |
+| 6 | `/api/v1/governance/metrics` | GET | ✅ Tab Governance |
+| 7 | `/api/v1/governance/logs` | GET | ✅ Tab Governance |
+| 8 | `/api/v1/governance/cloud-records` | GET | ✅ Tab Governance |
+| 9 | `/api/v1/governance/audit` | GET | ✅ Tab Audit Trail |
+| 10 | `/api/v1/governance/audit/export` | GET | ✅ Tab Audit Trail (CSV) |
+
+---
+
+## 🎯 Workflow Demo Consigliato (10 minuti)
+
+### 1. Apertura (1 min)
+- Apri `https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/dashboard`
+- Mostra il badge "Powered by IBM watsonx.ai" e il design IBM-style
+
+### 2. Analisi Rischio — Conto Sospetto (3 min)
+- Tab "Analisi Rischio"
+- Account ID: `100428660`, Periodo: 30 giorni
+- Click "Analizza Rischio"
+- Mostra: loading a 2 step → metriche → **pattern fan-out + smurfing** → spiegazione Granite
+- *"Il sistema ha rilevato 122 destinatari diversi e 9 transazioni strutturate sotto $10k"*
+
+### 3. Strumenti — Raccomandazioni (2 min)
+- Tab "Strumenti" → sezione Raccomandazioni
+- Stesso account `100428660`
+- Mostra: azioni ALERT/REVIEW con motivazione per compliance
+
+### 4. Governance (2 min)
+- Tab "Governance" → click "Aggiorna"
+- Mostra: metriche aggregate, log sessione, connessione IBM OpenScale cloud attiva
+
+### 5. Audit Trail (2 min)
+- Tab "Audit Trail" → click "Cerca" (senza filtro = tutti)
+- Mostra tabella con timestamp, modello AI usato (`ibm/granite-4-h-small`), ID univoco
+- Click "Export CSV" → download file per autorità
+- *"Se un ispettore chiede 'quando avete fatto questa analisi?', rispondo qui"*
+
+---
+
+## 📊 Dati Tecnici
+
+- **Dataset:** IBM HI-Small_Trans_sample.csv (~15k transazioni, 1.4MB)
+- **Risk Score:** formula su 5 fattori ponderati
+- **AML Patterns:** fan-out, fan-in, circular, smurfing
+- **AI Model:** `ibm/granite-4-h-small` via IBM watsonx.ai API (eu-de)
+- **Governance:** IBM Watson OpenScale, payload logging su cloud IBM
+- **Deploy:** IBM Code Engine buildpacks da GitHub (auto-build)
+
+---
+
+## ✅ Checklist Pre-Demo
+
+- [x] Dashboard 4-tab live su IBM Code Engine
+- [x] IBM Granite funzionante (verificato 24/06/2026)
+- [x] IBM Watson OpenScale governance attivo (cloud enabled: true)
+- [x] Audit Trail con export CSV
+- [x] Tutti e 10 gli endpoint esposti nella GUI
+- [x] Account di test verificati (`100428660` → fan-out + smurfing)
+- [ ] Verifica che il pod sia attivo prima della demo (health check)
+
+### Health Check Pre-Demo
+```bash
+curl https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/health
+```
+
+---
+
+## 🐛 Troubleshooting
+
+| Problema | Causa | Soluzione |
+|---|---|---|
+| Dashboard non risponde | Pod Code Engine in cold start | Attendere 10-30 sec dopo il primo accesso |
+| AI Explanation "fallback" | Rate limit watsonx.ai free tier | Riprovare dopo 30 sec |
+| Audit Trail vuoto | Pod riavviato (log in-memory persi) | Esegui almeno 1 analisi, poi cerca |
+| Export CSV vuoto | Nessun record di tipo risk_assessment | Esegui analisi dalla tab Analisi Rischio |
+
+---
+
+## 📅 Scadenze Contest
+
+- **1 Luglio 2026** — Demo Day
+- **8 Luglio 2026** — Finale
+
+---
+
+**Preparato da:** Claude Sonnet 4.6 + IBM Bob  
+**Data aggiornamento:** 24 Giugno 2026  
+**Versione:** 3.0

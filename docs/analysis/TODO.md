@@ -1,7 +1,7 @@
 # TODO — IBM Open Agentic Builders · Track A: Financial Risk Management
 
-**Demo**: 1 luglio 2026 · **Finale**: 8 luglio 2026 · **Oggi**: 23 giugno 2026 · **Giorni rimasti**: 8  
-**Aggiornato**: 23 giugno 2026 (sera)
+**Demo**: 1 luglio 2026 · **Finale**: 8 luglio 2026 · **Oggi**: 24 giugno 2026 · **Giorni rimasti**: 7  
+**Aggiornato**: 24 giugno 2026 (pomeriggio)
 
 ---
 
@@ -88,7 +88,7 @@
 
 ---
 
-## FASE 5 · API REST ✅ COMPLETATA
+## FASE 5 · API REST ✅ COMPLETATA (10 endpoint)
 
 - ✅ `src/api/models.py` — modelli Pydantic request/response (+ `ExplainRequest`, `ExplainResponse`)
 - ✅ `src/api/main.py` — app FastAPI con CORS e OpenAPI
@@ -96,8 +96,13 @@
   - ✅ `POST /api/v1/assess/risk`
   - ✅ `POST /api/v1/recommend/actions`
   - ✅ `POST /api/v1/detect/fraud`
-  - ✅ `POST /api/v1/explain` — **NUOVO** LLM Granite explanation
+  - ✅ `POST /api/v1/explain` — LLM Granite explanation
   - ✅ `GET  /api/v1/health`
+  - ✅ `GET  /api/v1/governance/metrics` — metriche aggregate watsonx.governance
+  - ✅ `GET  /api/v1/governance/logs` — log sessione corrente
+  - ✅ `GET  /api/v1/governance/cloud-records` — record IBM OpenScale cloud
+  - ✅ `GET  /api/v1/governance/audit` — audit trail con filtro account_id
+  - ✅ `GET  /api/v1/governance/audit/export` — export CSV per compliance
 - ✅ `src/api/orchestrator.py` — coordina le chiamate agli agenti con fallback graceful
 - ✅ `src/api/__init__.py`
 - ✅ `run_api.py` — entry point locale (`uvicorn src.api.main:app --reload`)
@@ -166,12 +171,21 @@
 - ✅ watsonx.governance — AI Use Case "Financial Risk Management - AML Detection" live (gov-675000bo4y, eu-de)
   - ✅ Risk level: High, Status: Developed
   - ✅ Lifecycle: "Granite LLM Approach" creato
-  - ✅ src/governance/ module (ModelRegistry, FactsheetManager, GovernanceMonitor)
+  - ✅ `src/governance/monitoring.py` — GovernanceMonitor con REST reali IBM Watson OpenScale (payload logging)
+  - ✅ `src/governance/model_registry.py` — ModelRegistry con OpenScale subscriptions API reale
+  - ✅ `src/governance/factsheet_manager.py` — FactsheetManager con Watson Studio catalog API reale
+  - ✅ Governance cloud enabled verificato (log ogni /assess/risk e /explain su IBM cloud)
 - ✅ MCP server (`mcp_server/`) — pushato dal collega (23 giu)
-- ✅ Dashboard web (`static/index.html`) — grafici Chart.js, Granite AI explanation, responsive
+- ✅ Dashboard web — 4 tab interattive, tutti gli endpoint esposti in GUI (24 giu)
+  - ✅ Tab Analisi Rischio: flusso automatico 2-step (assess → explain), URL nascosta, risk level auto-derivato
+  - ✅ Tab Strumenti: Analisi Transazione + Raccomandazioni + Fraud Detection
+  - ✅ Tab Governance: metriche + log locali + record IBM OpenScale cloud
+  - ✅ Tab Audit Trail: ricerca per account, tabella storico, export CSV
+  - ✅ AI Explanation (IBM Granite) mostrata prima dei grafici
+- ✅ Documentazione aggiornata: static/README.md, docs/demo/DEMO_PREPARATION_SUMMARY.md, README.md
 - ❌ MCP server deploy su IBM Cloud Code Engine
-- ❌ Dashboard commit + rebuild CE
 - ❌ Prompt template + Evaluation Studio (watsonx.governance grafici)
+- ❌ Video demo
 
 ---
 
@@ -192,13 +206,13 @@
 | 2 · Setup Ambiente | 🔄 Parziale | 50% |
 | 3 · Data Layer | ✅ Quasi completo | 80% |
 | 4 · Agenti (5 agenti incl. Granite) | ✅ Completo | 100% |
-| 5 · API REST (6 endpoint) | ✅ Completo | 100% |
+| 5 · API REST (10 endpoint) | ✅ Completo | 100% |
 | 6 · Orchestrazione wxO | ✅ Completo — live su wxo-675000bo4y | 100% |
 | 7 · Containerizzazione | ✅ Completo | 100% |
 | 8 · Deploy IBM Cloud + Granite live | ✅ Completo — endpoint pubblico live | 100% |
 | 9 · Testing | 🔄 Parziale | 15% |
-| 10 · Demo | ❌ Non iniziato | 0% |
-| 11 · Miglioramenti competitivi | 🔄 Parziale (explainRisk ✅, governance ✅, MCP ✅, dashboard ✅) | 80% |
+| 10 · Demo | 🔄 Parziale (docs ✅, video ❌) | 40% |
+| 11 · Miglioramenti competitivi | 🔄 Parziale (governance reale ✅, dashboard 4-tab ✅, audit trail ✅, MCP deploy ❌, Eval Studio ❌) | 85% |
 
 ---
 
@@ -219,8 +233,11 @@
 | 23 giu | watsonx.governance AI Use Case live | ✅ |
 | 23 giu | MCP server (collega) | ✅ |
 | 23 giu | Dashboard web (Bob) | ✅ |
-| 24 giu | Dashboard commit + rebuild CE | ❌ |
-| 24 giu | MCP server deploy su Code Engine | ❌ |
-| 24-25 giu | README aggiornato + Evaluation Studio | ❌ |
-| 25-28 giu | Slide architettura | ❌ |
+| 24 giu | Dashboard 4-tab live su Code Engine | ✅ |
+| 24 giu | Governance reale (OpenScale REST, ModelRegistry, FactsheetManager) | ✅ |
+| 24 giu | Audit Trail + CSV export | ✅ |
+| 24 giu | Tutti gli endpoint API esposti in GUI | ✅ |
+| 24 giu | Documentazione aggiornata (README, DEMO_SUMMARY, static/README) | ✅ |
+| 24-25 giu | MCP server deploy su Code Engine | ❌ |
+| 25-27 giu | Evaluation Studio (watsonx.governance) | ❌ |
 | 28-30 giu | Video demo | ❌ |
