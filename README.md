@@ -14,6 +14,7 @@ Sistema multi-agente per l'analisi automatizzata del rischio finanziario che uti
 - **watsonx Orchestrate** per orchestrazione workflow
 - **IBM Cloud Code Engine** per deployment containerizzato
 - **IBM Synthetic Data Sets** (15.000+ transazioni)
+- **MCP Server** per integrazione avanzata con watsonx Orchestrate
 
 ### 🔗 Endpoint Live
 ```
@@ -146,6 +147,16 @@ Spiegazioni in linguaggio naturale via IBM watsonx.ai Granite:
 | `/api/v1/explain` | POST | Genera spiegazione (Granite LLM) |
 
 **OpenAPI Spec:** `https://[endpoint]/docs`
+
+### 🔗 MCP Server Integration
+
+Oltre agli endpoint REST, tutti i 5 tools sono disponibili anche tramite **MCP (Model Context Protocol)** per integrazione avanzata con watsonx Orchestrate:
+
+- **MCP Server URL:** `https://financial-risk-mcp.xxx.eu-de.codeengine.appdomain.cloud`
+- **Transport:** SSE (Server-Sent Events)
+- **Tools:** analyzeTransaction, assessRisk, detectFraud, recommendActions, explainRisk
+
+📖 **Guida MCP:** [`docs/guides/MCP-SERVER-GUIDE.md`](docs/guides/MCP-SERVER-GUIDE.md)
 
 ### Esempio: Risk Assessment
 
@@ -306,6 +317,7 @@ python scripts/demo_auto.py
 - [Architecture Slides](docs/demo/ARCHITECTURE_SLIDES.md) - 13 slide complete
 - [Demo Scripts Guide](scripts/demo/README.md) - Come eseguire la demo
 - [Deployment Guide](docs/guides/DEPLOYMENT_GUIDE.md) - Deploy su IBM Cloud
+- [MCP Server Guide](docs/guides/MCP-SERVER-GUIDE.md) - Integrazione MCP Server
 - [Demo Preparation Summary](docs/demo/DEMO_PREPARATION_SUMMARY.md) - Riepilogo materiali
 - [All Guides](docs/guides/) - Tutte le guide
 
