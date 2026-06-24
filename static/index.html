@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Risk Dashboard - AML Detection</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .ibm-badge {
+            display: inline-block;
+            background: #0f62fe;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .input-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .input-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .metric-card h3 {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .metric-value.high { color: #dc3545; }
+        .metric-value.medium { color: #ffc107; }
+        .metric-value.low { color: #28a745; }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .chart-card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .explanation-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .explanation-card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .explanation-text {
+            color: #555;
+            line-height: 1.8;
+            font-size: 1.05em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #dc3545;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .api-config {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .api-config label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .api-config input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-family: monospace;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏦 Financial Risk Dashboard</h1>
+            <p>AML Detection & Risk Assessment System</p>
+            <span class="ibm-badge">Powered by IBM watsonx.governance</span>
+        </div>
+
+        <div class="error" id="errorMessage"></div>
+
+        <div class="input-section">
+            <h2>📊 Analizza Rischio Transazione</h2>
+            
+            <div class="api-config">
+                <label for="apiUrl">API Endpoint:</label>
+                <input type="text" id="apiUrl" value="https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/api/v1/explain">
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="accountId">Account ID:</label>
+                    <input type="text" id="accountId" value="ACC-123" placeholder="es. ACC-123">
+                </div>
+                
+                <div class="form-group">
+                    <label for="riskScore">Risk Score (0-1):</label>
+                    <input type="number" id="riskScore" value="0.75" min="0" max="1" step="0.01">
+                </div>
+                
+                <div class="form-group">
+                    <label for="riskLevel">Risk Level:</label>
+                    <select id="riskLevel">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high" selected>High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn" onclick="analyzeRisk()">
+                🔍 Analizza Rischio
+            </button>
+        </div>
+
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analisi in corso con IBM Granite...</p>
+        </div>
+
+        <div class="results-section" id="results">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>Risk Score</h3>
+                    <div class="metric-value" id="metricScore">-</div>
+                    <p id="metricScoreLabel">-</p>
+                </div>
+                
+                <div class="metric-card">
+                    <h3>Risk Level</h3>
+                    <div class="metric-value" id="metricLevel">-</div>
+                    <p id="metricLevelLabel">-</p>
+                </div>
+                
+                <div class="metric-card">
+                    <h3>Account ID</h3>
+                    <div class="metric-value" style="color: #667eea; font-size: 1.8em;" id="metricAccount">-</div>
+                    <p>Identificativo Cliente</p>
+                </div>
+                
+                <div class="metric-card">
+                    <h3>Timestamp</h3>
+                    <div class="metric-value" style="color: #764ba2; font-size: 1.5em;" id="metricTime">-</div>
+                    <p>Data Analisi</p>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>📈 Risk Score Distribution</h3>
+                    <canvas id="riskChart"></canvas>
+                </div>
+                
+                <div class="chart-card">
+                    <h3>🎯 Risk Level Breakdown</h3>
+                    <canvas id="levelChart"></canvas>
+                </div>
+            </div>
+
+            <div class="explanation-card">
+                <h3>🤖 AI Explanation (IBM Granite)</h3>
+                <div class="explanation-text" id="explanation">
+                    Caricamento spiegazione...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let riskChart = null;
+        let levelChart = null;
+
+        async function analyzeRisk() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const accountId = document.getElementById('accountId').value;
+            const riskScore = parseFloat(document.getElementById('riskScore').value);
+            const riskLevel = document.getElementById('riskLevel').value;
+
+            // Validation
+            if (!accountId || isNaN(riskScore) || riskScore < 0 || riskScore > 1) {
+                showError('Inserisci valori validi per tutti i campi');
+                return;
+            }
+
+            // Hide error and results
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        account_id: accountId,
+                        risk_score: riskScore,
+                        risk_level: riskLevel,
+                        aml_patterns: [],
+                        recommendations: []
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayResults(data, accountId, riskScore, riskLevel);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Errore nella chiamata API: ${error.message}`);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function displayResults(data, accountId, riskScore, riskLevel) {
+            // Update metrics
+            const scoreElement = document.getElementById('metricScore');
+            scoreElement.textContent = (riskScore * 100).toFixed(1) + '%';
+            scoreElement.className = 'metric-value ' + getRiskClass(riskScore);
+            document.getElementById('metricScoreLabel').textContent = getRiskDescription(riskScore);
+
+            const levelElement = document.getElementById('metricLevel');
+            levelElement.textContent = riskLevel.toUpperCase();
+            levelElement.className = 'metric-value ' + riskLevel;
+
+            document.getElementById('metricAccount').textContent = accountId;
+            document.getElementById('metricTime').textContent = new Date().toLocaleTimeString('it-IT');
+
+            // Update explanation
+            document.getElementById('explanation').textContent = data.explanation || 'Nessuna spiegazione disponibile';
+
+            // Create charts
+            createRiskChart(riskScore);
+            createLevelChart(riskLevel);
+
+            // Show results
+            document.getElementById('results').style.display = 'block';
+        }
+
+        function createRiskChart(riskScore) {
+            const ctx = document.getElementById('riskChart');
+            
+            if (riskChart) {
+                riskChart.destroy();
+            }
+
+            const safeScore = riskScore * 100;
+            const remainingScore = 100 - safeScore;
+
+            riskChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Risk Score', 'Safe Score'],
+                    datasets: [{
+                        data: [safeScore, remainingScore],
+                        backgroundColor: [
+                            getRiskColor(riskScore),
+                            '#e0e0e0'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createLevelChart(riskLevel) {
+            const ctx = document.getElementById('levelChart');
+            
+            if (levelChart) {
+                levelChart.destroy();
+            }
+
+            const levels = ['low', 'medium', 'high', 'critical'];
+            const values = levels.map(level => level === riskLevel ? 100 : 20);
+            const colors = levels.map(level => level === riskLevel ? getLevelColor(level) : '#e0e0e0');
+
+            levelChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Low', 'Medium', 'High', 'Critical'],
+                    datasets: [{
+                        label: 'Risk Level',
+                        data: values,
+                        backgroundColor: colors,
+                        borderWidth: 0,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function getRiskClass(score) {
+            if (score >= 0.75) return 'high';
+            if (score >= 0.5) return 'medium';
+            return 'low';
+        }
+
+        function getRiskColor(score) {
+            if (score >= 0.75) return '#dc3545';
+            if (score >= 0.5) return '#ffc107';
+            return '#28a745';
+        }
+
+        function getLevelColor(level) {
+            const colors = {
+                'low': '#28a745',
+                'medium': '#ffc107',
+                'high': '#dc3545',
+                'critical': '#6f42c1'
+            };
+            return colors[level] || '#667eea';
+        }
+
+        function getRiskDescription(score) {
+            if (score >= 0.75) return 'Alto Rischio - Richiede Attenzione';
+            if (score >= 0.5) return 'Rischio Medio - Monitoraggio';
+            return 'Basso Rischio - Normale';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = '⚠️ ' + message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Allow Enter key to submit
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                analyzeRisk();
+            }
+        });
+    </script>
+</body>
+</html>

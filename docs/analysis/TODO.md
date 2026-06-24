@@ -1,7 +1,7 @@
 # TODO — IBM Open Agentic Builders · Track A: Financial Risk Management
 
-**Demo**: 1 luglio 2026 · **Finale**: 8 luglio 2026 · **Oggi**: 22 giugno 2026 · **Giorni rimasti**: 9  
-**Aggiornato**: 22 giugno 2026 (sera)
+**Demo**: 1 luglio 2026 · **Finale**: 8 luglio 2026 · **Oggi**: 23 giugno 2026 · **Giorni rimasti**: 8  
+**Aggiornato**: 23 giugno 2026 (sera)
 
 ---
 
@@ -163,7 +163,15 @@
 ## FASE 11 · Miglioramenti competitivi (post-deploy)
 
 - ✅ Aggiungi tool `explainRisk` all'agente wxO — espone Granite nel report wxO (5 tools, live 23 giu)
-- ❌ watsonx.governance — monitoring AI model fairness/drift su Granite (layer separato, non tocca flusso esistente)
+- ✅ watsonx.governance — AI Use Case "Financial Risk Management - AML Detection" live (gov-675000bo4y, eu-de)
+  - ✅ Risk level: High, Status: Developed
+  - ✅ Lifecycle: "Granite LLM Approach" creato
+  - ✅ src/governance/ module (ModelRegistry, FactsheetManager, GovernanceMonitor)
+- ✅ MCP server (`mcp_server/`) — pushato dal collega (23 giu)
+- ✅ Dashboard web (`static/index.html`) — grafici Chart.js, Granite AI explanation, responsive
+- ❌ MCP server deploy su IBM Cloud Code Engine
+- ❌ Dashboard commit + rebuild CE
+- ❌ Prompt template + Evaluation Studio (watsonx.governance grafici)
 
 ---
 
@@ -190,7 +198,7 @@
 | 8 · Deploy IBM Cloud + Granite live | ✅ Completo — endpoint pubblico live | 100% |
 | 9 · Testing | 🔄 Parziale | 15% |
 | 10 · Demo | ❌ Non iniziato | 0% |
-| 11 · Miglioramenti competitivi | 🔄 Parziale (explainRisk ✅, governance ❌) | 50% |
+| 11 · Miglioramenti competitivi | 🔄 Parziale (explainRisk ✅, governance ✅, MCP ✅, dashboard ✅) | 80% |
 
 ---
 
@@ -208,7 +216,11 @@
 | 22 giu (sera) | Script deploy unificato + docs deployment | ✅ FATTO |
 | 22 giu (sera) | Deploy skills + agente su wxO — end-to-end ok | ✅ FATTO |
 | 23 giu | explainRisk tool in wxO agent | ✅ |
-| 23-24 giu | watsonx.governance integration | ❌ |
-| 24-25 giu | README + script demo curl | ❌ |
-| 25-28 giu | Test end-to-end + slide architettura | ❌ |
+| 23 giu | watsonx.governance AI Use Case live | ✅ |
+| 23 giu | MCP server (collega) | ✅ |
+| 23 giu | Dashboard web (Bob) | ✅ |
+| 24 giu | Dashboard commit + rebuild CE | ❌ |
+| 24 giu | MCP server deploy su Code Engine | ❌ |
+| 24-25 giu | README aggiornato + Evaluation Studio | ❌ |
+| 25-28 giu | Slide architettura | ❌ |
 | 28-30 giu | Video demo | ❌ |

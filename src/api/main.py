@@ -12,8 +12,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic_settings import BaseSettings
+import os
 
 # Import data layer functions
 from ..data.loader import (
@@ -180,6 +182,16 @@ app.add_middleware(
     allow_methods=settings.cors_allow_methods,
     allow_headers=settings.cors_allow_headers,
 )
+
+
+# ============================================================================
+# Static Files
+# ============================================================================
+
+# Mount static files directory if it exists
+static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 # ============================================================================
@@ -734,6 +746,7 @@ async def root():
         "version": settings.app_version,
         "docs": f"{settings.api_prefix}/docs",
         "health": f"{settings.api_prefix}/health",
+        "dashboard": "/dashboard",
         "endpoints": {
             "analyze_transaction": f"{settings.api_prefix}/analyze/transaction",
             "assess_risk": f"{settings.api_prefix}/assess/risk",
@@ -742,6 +755,26 @@ async def root():
             "explain": f"{settings.api_prefix}/explain"
         }
     }
+
+
+@app.get(
+    "/dashboard",
+    tags=["Dashboard"],
+    summary="Risk Dashboard",
+    description="Interactive dashboard for risk analysis and visualization"
+)
+async def dashboard():
+    """Serve the interactive risk dashboard."""
+    static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static")
+    dashboard_path = os.path.join(static_dir, "index.html")
+    
+    if os.path.exists(dashboard_path):
+        return FileResponse(dashboard_path)
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail="Dashboard not found. Please ensure static/index.html exists."
+        )
 
 
 # Made with Bob
