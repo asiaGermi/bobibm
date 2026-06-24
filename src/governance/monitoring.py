@@ -141,7 +141,8 @@ class GovernanceMonitor:
             "scoring_id": scoring_id,
             "timestamp": ts,
             "type": "risk_assessment",
-            **record["request"],
+            "account_id": account_id,
+            "lookback_days": lookback_days,
             "risk_score": risk_score,
             "risk_level": risk_level,
             "aml_patterns_count": aml_patterns_count,
@@ -214,11 +215,13 @@ class GovernanceMonitor:
     # Query helpers
     # ------------------------------------------------------------------
 
-    def get_recent_logs(self, limit: int = 50, log_type: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Return recent local logs (optionally filtered by type)."""
+    def get_recent_logs(self, limit: int = 50, log_type: Optional[str] = None, account_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Return recent local logs (optionally filtered by type and/or account_id)."""
         logs = self._local_log
         if log_type:
             logs = [l for l in logs if l.get("type") == log_type]
+        if account_id:
+            logs = [l for l in logs if l.get("account_id") == account_id]
         return logs[-limit:][::-1]
 
     def get_metrics(self) -> Dict[str, Any]:

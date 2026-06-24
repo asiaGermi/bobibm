@@ -240,10 +240,74 @@
         .stat-value { font-size: 1.4em; font-weight: bold; color: #333; }
         .stat-label { font-size: 0.8em; color: #888; margin-top: 4px; }
 
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .tab-btn {
+            padding: 10px 24px;
+            border-radius: 25px;
+            border: 2px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: white;
+            color: #764ba2;
+            border-color: white;
+        }
+        .tab-btn:hover:not(.active) { background: rgba(255,255,255,0.25); }
+
+        .audit-section { display: none; }
+        .audit-search {
+            background: white;
+            padding: 25px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 25px;
+        }
+        .audit-search h2 { color: #333; margin-bottom: 18px; font-size: 1.6em; }
+        .audit-search-row { display: flex; gap: 12px; align-items: flex-end; }
+        .audit-search-row .form-group { flex: 1; margin-bottom: 0; }
+        .audit-search-row .btn { flex-shrink: 0; padding: 12px 28px; font-size: 0.95em; }
+
+        .audit-results {
+            background: white;
+            padding: 25px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+        .audit-results h3 { color: #333; margin-bottom: 18px; font-size: 1.2em; }
+        .audit-table { width: 100%; border-collapse: collapse; font-size: 0.88em; }
+        .audit-table th {
+            background: #f0f0f5;
+            padding: 10px 14px;
+            text-align: left;
+            color: #555;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+        }
+        .audit-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #444;
+            vertical-align: top;
+        }
+        .audit-table tr:hover td { background: #fafafa; }
+        .audit-id { font-family: monospace; color: #888; font-size: 0.8em; }
+        .audit-empty { text-align: center; color: #888; padding: 30px; }
+
         @media (max-width: 768px) {
             .charts-grid { grid-template-columns: 1fr; }
             .header h1 { font-size: 1.8em; }
             .steps { flex-direction: column; align-items: center; gap: 10px; }
+            .audit-search-row { flex-direction: column; }
         }
     </style>
 </head>
@@ -255,8 +319,14 @@
             <span class="ibm-badge">Powered by IBM watsonx.ai</span>
         </div>
 
+        <div class="tab-nav">
+            <button class="tab-btn active" id="tabBtnAnalisi" onclick="switchTab('analisi')">📊 Analisi Rischio</button>
+            <button class="tab-btn" id="tabBtnAudit" onclick="switchTab('audit')">📋 Audit Trail</button>
+        </div>
+
         <div class="error" id="errorMessage"></div>
 
+        <div id="tab-analisi">
         <div class="input-section">
             <h2>📊 Analizza Conto</h2>
 
@@ -347,6 +417,29 @@
                 <div class="explanation-text" id="explanation">-</div>
             </div>
         </div>
+        </div><!-- end tab-analisi -->
+
+        <div id="tab-audit" class="audit-section">
+            <div class="audit-search">
+                <h2>📋 Audit Trail</h2>
+                <p style="color:#666; margin-bottom:18px; font-size:0.95em;">
+                    Registro di tutte le analisi eseguite dal sistema. Ogni record include data, modello AI usato e dati analizzati.
+                </p>
+                <div class="audit-search-row">
+                    <div class="form-group">
+                        <label for="auditAccountId">Filtra per Account ID (opzionale):</label>
+                        <input type="text" id="auditAccountId" placeholder="es. 100428660  (lascia vuoto per tutte)">
+                    </div>
+                    <button class="btn" onclick="runAudit()">🔍 Cerca</button>
+                </div>
+            </div>
+
+            <div class="audit-results" id="auditResults">
+                <h3 id="auditResultsTitle">Risultati</h3>
+                <div id="auditTableContainer"></div>
+            </div>
+        </div><!-- end tab-audit -->
+
     </div>
 
     <script>
@@ -561,6 +654,97 @@
             el.textContent = '⚠️ ' + message;
             el.style.display = 'block';
             setTimeout(() => { el.style.display = 'none'; }, 8000);
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tab-analisi').style.display = tab === 'analisi' ? 'block' : 'none';
+            document.getElementById('tab-audit').style.display = tab === 'audit' ? 'block' : 'none';
+            document.getElementById('tabBtnAnalisi').className = 'tab-btn' + (tab === 'analisi' ? ' active' : '');
+            document.getElementById('tabBtnAudit').className = 'tab-btn' + (tab === 'audit' ? ' active' : '');
+        }
+
+        async function runAudit() {
+            const baseUrl = document.getElementById('baseUrl').value.replace(/\/$/, '');
+            const accountId = document.getElementById('auditAccountId').value.trim();
+            const url = baseUrl + '/governance/audit' + (accountId ? `?account_id=${encodeURIComponent(accountId)}&limit=100` : '?limit=100');
+
+            const resultsDiv = document.getElementById('auditResults');
+            const container = document.getElementById('auditTableContainer');
+            const title = document.getElementById('auditResultsTitle');
+
+            resultsDiv.style.display = 'block';
+            container.innerHTML = '<p style="color:#888">Caricamento...</p>';
+
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                const entries = data.entries || [];
+
+                title.textContent = accountId
+                    ? `${entries.length} analisi trovate per account ${accountId}`
+                    : `Ultime ${entries.length} analisi (tutti gli account)`;
+
+                if (entries.length === 0) {
+                    container.innerHTML = '<p class="audit-empty">Nessun record trovato. Esegui prima un\'analisi dalla tab "Analisi Rischio".</p>';
+                    return;
+                }
+
+                const fmt = (v) => v != null ? v : '-';
+                const fmtScore = (s) => s != null ? (s * 100).toFixed(1) + '%' : '-';
+                const fmtDate = (ts) => {
+                    if (!ts) return '-';
+                    try { return new Date(ts).toLocaleString('it-IT'); } catch { return ts; }
+                };
+                const levelBadge = (l) => {
+                    const colors = { low: '#28a745', medium: '#ffc107', high: '#dc3545', critical: '#6f42c1' };
+                    const c = colors[l?.toLowerCase()] || '#888';
+                    return `<span style="background:${c};color:white;padding:2px 8px;border-radius:10px;font-size:0.8em;font-weight:600">${(l||'-').toUpperCase()}</span>`;
+                };
+                const modelBadge = (m, fb) => {
+                    if (!m) return '-';
+                    if (fb) return `<span style="color:#ff9800">⚠ fallback</span>`;
+                    return `<span style="color:#0f62fe">✓ ${m}</span>`;
+                };
+
+                container.innerHTML = `
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th>Data / Ora</th>
+                            <th>Account ID</th>
+                            <th>Risk Score</th>
+                            <th>Risk Level</th>
+                            <th>Pattern AML</th>
+                            <th>Transazioni</th>
+                            <th>Periodo</th>
+                            <th>Modello AI</th>
+                            <th>ID Analisi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${entries.map(e => `
+                        <tr>
+                            <td>${fmtDate(e.timestamp)}</td>
+                            <td><code style="font-size:0.85em">${fmt(e.account_id)}</code></td>
+                            <td>${fmtScore(e.risk_score)}</td>
+                            <td>${levelBadge(e.risk_level)}</td>
+                            <td style="text-align:center">${fmt(e.aml_patterns_count)}</td>
+                            <td style="text-align:center">${fmt(e.transaction_count)}</td>
+                            <td style="text-align:center">${fmt(e.lookback_days)} gg</td>
+                            <td>${modelBadge(e.ai_model_used, e.ai_fallback)}</td>
+                            <td class="audit-id">${e.scoring_id ? e.scoring_id.substring(0,8) + '...' : '-'}</td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+                <p style="margin-top:15px;color:#888;font-size:0.8em">
+                    Sistema: ${entries[0]?.system || 'Financial Risk Management API'} ·
+                    Fonte dati: ${entries[0]?.data_source || 'IBM AML Dataset'} ·
+                    Dati conservati su: IBM Watson OpenScale (cloud)
+                </p>`;
+            } catch (err) {
+                container.innerHTML = `<p class="audit-empty">Errore nel caricamento: ${err.message}</p>`;
+            }
         }
 
         document.addEventListener('keypress', e => { if (e.key === 'Enter') runFullAnalysis(); });
