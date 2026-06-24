@@ -12,7 +12,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic_settings import BaseSettings
 import os
@@ -797,6 +797,46 @@ async def governance_cloud_records(limit: int = 20):
     if governance_monitor is None:
         raise HTTPException(status_code=503, detail="Governance monitor not initialized")
     return governance_monitor.get_cloud_records(limit=limit)
+
+
+@app.get(
+    f"{settings.api_prefix}/governance/audit/export",
+    tags=["Governance"],
+    summary="Export Audit Trail CSV",
+    description="Export audit trail as CSV file for compliance reporting"
+)
+async def governance_audit_export(account_id: Optional[str] = None):
+    from io import StringIO
+    import csv
+    logs = [] if governance_monitor is None else governance_monitor.get_recent_logs(limit=10000, account_id=account_id)
+    output = StringIO()
+    writer = csv.DictWriter(output, fieldnames=[
+        'timestamp', 'scoring_id', 'account_id', 'risk_score', 'risk_level',
+        'aml_patterns_count', 'transaction_count', 'lookback_days',
+        'system', 'data_source'
+    ])
+    writer.writeheader()
+    for log in logs:
+        if log.get('type') != 'risk_assessment':
+            continue
+        writer.writerow({
+            'timestamp': log.get('timestamp', ''),
+            'scoring_id': log.get('scoring_id', ''),
+            'account_id': log.get('account_id', ''),
+            'risk_score': log.get('risk_score', ''),
+            'risk_level': log.get('risk_level', ''),
+            'aml_patterns_count': log.get('aml_patterns_count', 0),
+            'transaction_count': log.get('transaction_count', 0),
+            'lookback_days': log.get('lookback_days', 30),
+            'system': 'Financial Risk Management API v1.0',
+            'data_source': 'IBM AML Dataset (HI-Small_Trans_sample.csv)',
+        })
+    filename = f"audit_trail_{account_id or 'all'}.csv"
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 
 @app.get(

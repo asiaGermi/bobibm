@@ -431,6 +431,7 @@
                         <input type="text" id="auditAccountId" placeholder="es. 100428660  (lascia vuoto per tutte)">
                     </div>
                     <button class="btn" onclick="runAudit()">🔍 Cerca</button>
+                    <button class="btn" onclick="exportAuditCSV()" style="background: linear-gradient(135deg, #28a745, #20883a)">📥 Export CSV</button>
                 </div>
             </div>
 
@@ -745,6 +746,14 @@
             } catch (err) {
                 container.innerHTML = `<p class="audit-empty">Errore nel caricamento: ${err.message}</p>`;
             }
+        }
+
+        function exportAuditCSV() {
+            const baseUrl = document.getElementById('baseUrl').value.replace(/\/$/, '');
+            const accountId = document.getElementById('auditAccountId').value.trim();
+            let url = baseUrl + '/governance/audit/export';
+            if (accountId) url += `?account_id=${encodeURIComponent(accountId)}`;
+            window.location.href = url;
         }
 
         document.addEventListener('keypress', e => { if (e.key === 'Enter') runFullAnalysis(); });
