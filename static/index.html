@@ -486,10 +486,10 @@
             const statsDiv = document.getElementById('txStats');
             const fmt = (n) => n != null ? Number(n).toLocaleString('it-IT', { maximumFractionDigits: 2 }) : '-';
             statsDiv.innerHTML = [
-                { label: 'Transazioni', value: fmt(txStats.transaction_count) },
-                { label: 'Volume totale', value: txStats.total_amount != null ? '$ ' + fmt(txStats.total_amount) : '-' },
-                { label: 'Media transazione', value: txStats.avg_amount != null ? '$ ' + fmt(txStats.avg_amount) : '-' },
-                { label: 'Transazione max', value: txStats.max_amount != null ? '$ ' + fmt(txStats.max_amount) : '-' },
+                { label: 'Transazioni', value: fmt(txStats.total_transactions) },
+                { label: 'Volume totale', value: txStats.total_sent != null ? '$ ' + fmt(txStats.total_sent) : '-' },
+                { label: 'Media transazione', value: txStats.avg_transaction_amount != null ? '$ ' + fmt(txStats.avg_transaction_amount) : '-' },
+                { label: 'Transazione max', value: txStats.max_transaction != null ? '$ ' + fmt(txStats.max_transaction) : '-' },
             ].map(s => `
                 <div class="stat-item">
                     <div class="stat-value">${s.value}</div>
