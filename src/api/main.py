@@ -36,6 +36,9 @@ from ..data.analyzer import (
 # Import orchestrator
 from .orchestrator import AgentOrchestrator
 
+# Import governance monitor
+from ..governance.monitoring import GovernanceMonitor
+
 # Import API models
 from .models import (
     TransactionAnalysisRequest,
@@ -108,41 +111,42 @@ settings = Settings()
 # Application Lifecycle
 # ============================================================================
 
-# Global orchestrator instance
+# Global instances
 orchestrator = None
+governance_monitor = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
-    global orchestrator
-    
+    global orchestrator, governance_monitor
+
     # Startup
     print(f"Starting {settings.app_name} v{settings.app_version}")
     try:
-        # Test data layer connectivity
         info = get_dataset_info(settings.data_path)
         print(f"✓ Data layer connected: {info['total_transactions']} transactions loaded")
-        
-        # Initialize orchestrator
+
         orchestrator = AgentOrchestrator(settings.data_path)
         print(f"✓ Agent orchestrator initialized")
-        
-        # Log watsonx.ai configuration
+
         if settings.watsonx_api_key and settings.watsonx_project_id:
             print(f"✓ watsonx.ai configured: {settings.watsonx_url}")
             print(f"  - Project ID: {settings.watsonx_project_id[:8]}...")
         else:
             print(f"⚠ watsonx.ai not configured (ExplanationAgent will use fallback mode)")
-            if not settings.watsonx_api_key:
-                print(f"  - Missing: WATSONX_API_KEY")
-            if not settings.watsonx_project_id:
-                print(f"  - Missing: WATSONX_PROJECT_ID")
+
+        governance_api_key = os.getenv("WATSONX_GOVERNANCE_API_KEY")
+        governance_monitor = GovernanceMonitor(api_key=governance_api_key)
+        if governance_monitor.enabled:
+            print(f"✓ watsonx.governance connected (instance: {GovernanceMonitor.INSTANCE_ID[:8]}...)")
+        else:
+            print(f"⚠ watsonx.governance running in local-only mode (set WATSONX_GOVERNANCE_API_KEY)")
+
     except Exception as e:
-        print(f"⚠ Warning: Data layer connection issue: {str(e)}")
-    
+        print(f"⚠ Warning during startup: {str(e)}")
+
     yield
-    
-    # Shutdown
+
     print(f"Shutting down {settings.app_name}")
 
 
@@ -462,14 +466,26 @@ async def assess_risk(request: RiskAssessmentRequest):
         # Build transaction statistics
         transaction_stats = TransactionStatistics(**history['statistics'])
         
-        return RiskAssessmentResponse(
+        response = RiskAssessmentResponse(
             account_id=request.account_id,
             analysis_period_days=request.lookback_days,
             date_range=history['date_range'],
             risk_metrics=risk_metrics,
             transaction_statistics=transaction_stats
         )
-        
+
+        if governance_monitor:
+            governance_monitor.log_risk_assessment(
+                account_id=request.account_id,
+                lookback_days=request.lookback_days,
+                risk_score=risk_score,
+                risk_level=risk_level,
+                aml_patterns_count=len(aml_patterns),
+                tx_count=history['statistics'].get('transaction_count', 0),
+            )
+
+        return response
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -704,12 +720,23 @@ async def generate_explanation(request: ExplainRequest):
         if explanation_result['explanation']:
             explanation_data = explanation_result['explanation']
             
+            fallback_used = (explanation_data['model_used'] == 'fallback')
+
+            if governance_monitor:
+                governance_monitor.log_explanation(
+                    account_id=request.account_id,
+                    risk_score=request.risk_score,
+                    risk_level=request.risk_level,
+                    model_used=explanation_data['model_used'],
+                    fallback_used=fallback_used,
+                )
+
             return ExplainResponse(
                 account_id=request.account_id,
                 explanation=explanation_data['explanation'],
                 model_used=explanation_data['model_used'],
                 generated_at=datetime.utcnow().isoformat(),
-                fallback_used=(explanation_data['model_used'] == 'fallback')
+                fallback_used=fallback_used,
             )
         else:
             # If explanation failed, return error details
@@ -727,6 +754,49 @@ async def generate_explanation(request: ExplainRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error generating explanation: {str(e)}"
         )
+
+
+# ============================================================================
+# Governance Endpoints
+# ============================================================================
+
+@app.get(
+    f"{settings.api_prefix}/governance/metrics",
+    tags=["Governance"],
+    summary="Governance Metrics",
+    description="Aggregated metrics from watsonx.governance prediction logs"
+)
+async def governance_metrics():
+    if governance_monitor is None:
+        raise HTTPException(status_code=503, detail="Governance monitor not initialized")
+    return governance_monitor.get_metrics()
+
+
+@app.get(
+    f"{settings.api_prefix}/governance/logs",
+    tags=["Governance"],
+    summary="Recent Governance Logs",
+    description="Recent prediction logs (local cache)"
+)
+async def governance_logs(limit: int = 20, log_type: Optional[str] = None):
+    if governance_monitor is None:
+        raise HTTPException(status_code=503, detail="Governance monitor not initialized")
+    return {
+        "logs": governance_monitor.get_recent_logs(limit=limit, log_type=log_type),
+        "total": len(governance_monitor._local_log),
+    }
+
+
+@app.get(
+    f"{settings.api_prefix}/governance/cloud-records",
+    tags=["Governance"],
+    summary="Cloud Governance Records",
+    description="Fetch prediction records directly from IBM watsonx.governance"
+)
+async def governance_cloud_records(limit: int = 20):
+    if governance_monitor is None:
+        raise HTTPException(status_code=503, detail="Governance monitor not initialized")
+    return governance_monitor.get_cloud_records(limit=limit)
 
 
 # ============================================================================
@@ -752,7 +822,10 @@ async def root():
             "assess_risk": f"{settings.api_prefix}/assess/risk",
             "recommend_actions": f"{settings.api_prefix}/recommend/actions",
             "detect_fraud": f"{settings.api_prefix}/detect/fraud",
-            "explain": f"{settings.api_prefix}/explain"
+            "explain": f"{settings.api_prefix}/explain",
+            "governance_metrics": f"{settings.api_prefix}/governance/metrics",
+            "governance_logs": f"{settings.api_prefix}/governance/logs",
+            "governance_cloud_records": f"{settings.api_prefix}/governance/cloud-records",
         }
     }
 

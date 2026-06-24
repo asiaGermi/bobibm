@@ -91,3 +91,8 @@ run_api.py
 !src/
 !data/
 !requirements.txt
+
+# Exclude large data files not needed at runtime (app uses sample CSV)
+data/raw/HI-Small_Trans.csv
+data/raw/aml-datasets.zip
+data/raw/LI-Small_accounts.csv

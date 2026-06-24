@@ -1,254 +1,255 @@
 """
 Model Registry for watsonx.governance
 
-Handles registration and tracking of AI models in watsonx.governance.
+Registers and tracks AI models via the Watson OpenScale REST API.
+No heavy SDK — uses requests directly.
 """
 
 import os
+import time
 import logging
 from typing import Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
-try:
-    from ibm_aigov_facts_client import AIGovFactsClient
-    from ibm_aigov_facts_client.supporting_classes.enums import ModelEntryType
-    AIGOV_AVAILABLE = True
-except ImportError:
-    AIGOV_AVAILABLE = False
-    logging.warning("ibm-aigov-facts-client not available. Model registry will run in mock mode.")
+import requests
+
+logger = logging.getLogger(__name__)
+
+IAM_TOKEN_URL = "https://iam.cloud.ibm.com/identity/token"
+GOVERNANCE_BASE_URL = "https://eu-de.aiopenscale.cloud.ibm.com"
 
 
 class ModelRegistry:
     """
-    Manages model registration and tracking in watsonx.governance.
-    
-    This class handles:
-    - Registering AI models in the governance catalog
-    - Updating model metadata and versions
-    - Linking models to AI use cases
-    - Creating and managing AI Factsheets
+    Registers and tracks AI models in IBM watsonx.governance.
+
+    Maps model concepts to OpenScale service_providers + subscriptions:
+    - register_model()  → ensure service provider + subscription exist
+    - get_model_info()  → GET subscription from governance
+    - update_model_metadata() → not directly supported by OpenScale;
+                                stored locally and logged
     """
-    
-    def __init__(
-        self,
-        api_key: Optional[str] = None,
-        instance_id: Optional[str] = None,
-        catalog_id: Optional[str] = None,
-        governance_url: Optional[str] = None
-    ):
-        """
-        Initialize the Model Registry.
-        
-        Args:
-            api_key: IBM Cloud API key for governance
-            instance_id: watsonx.governance instance ID
-            catalog_id: Catalog/inventory ID for model storage
-            governance_url: watsonx.governance API URL
-        """
+
+    INSTANCE_ID = "bc2c304b-0513-4bad-832c-6ecf916274af"
+    SERVICE_PROVIDER_ID = "019ef968-e043-70bd-8fa1-5bfc88a05cb4"
+
+    def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("WATSONX_GOVERNANCE_API_KEY")
-        self.instance_id = instance_id or os.getenv("WATSONX_GOVERNANCE_INSTANCE_ID")
-        self.catalog_id = catalog_id or os.getenv("WATSONX_GOVERNANCE_CATALOG_ID")
-        self.governance_url = governance_url or os.getenv("WATSONX_GOVERNANCE_URL")
-        
-        self.client = None
-        self.enabled = os.getenv("ENABLE_GOVERNANCE_TRACKING", "true").lower() == "true"
-        
-        if self.enabled and AIGOV_AVAILABLE and all([self.api_key, self.instance_id, self.catalog_id]):
+        self._token: Optional[str] = None
+        self._token_exp: float = 0.0
+        self.enabled = bool(self.api_key)
+        self._model_cache: Dict[str, Dict[str, Any]] = {}
+
+        if self.enabled:
             try:
-                self.client = AIGovFactsClient(
-                    api_key=self.api_key,
-                    container_id=self.catalog_id,
-                    container_type="catalog",
-                    experiment_name="Financial Risk Management"
-                )
-                logging.info("ModelRegistry initialized with watsonx.governance")
-            except Exception as e:
-                logging.error(f"Failed to initialize AIGovFactsClient: {e}")
-                self.client = None
-        else:
-            logging.info("ModelRegistry running in mock mode (governance disabled or SDK unavailable)")
-    
+                self._refresh_token()
+                logger.info("ModelRegistry connected to IBM watsonx.governance")
+            except Exception as exc:
+                logger.warning(f"ModelRegistry: token fetch failed — running offline: {exc}")
+                self.enabled = False
+
+    # ------------------------------------------------------------------
+    # Token
+    # ------------------------------------------------------------------
+
+    def _refresh_token(self) -> str:
+        resp = requests.post(
+            IAM_TOKEN_URL,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data=f"grant_type=urn:ibm:params:oauth:grant-type:apikey&apikey={self.api_key}",
+            timeout=15,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        token: str = data["access_token"]
+        self._token = token
+        self._token_exp = time.time() + data.get("expires_in", 3600) - 120
+        return token
+
+    def _get_token(self) -> str:
+        if not self._token or time.time() >= self._token_exp:
+            return self._refresh_token()
+        return self._token
+
+    def _headers(self) -> Dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self._get_token()}",
+            "Content-Type": "application/json",
+        }
+
+    def _base(self) -> str:
+        return f"{GOVERNANCE_BASE_URL}/openscale/{self.INSTANCE_ID}/v2"
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
     def register_model(
         self,
         model_id: str,
         model_name: str,
-        model_type: str = "foundation_model",
+        model_type: str = "custom",
         provider: str = "IBM",
         description: Optional[str] = None,
-        use_case_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Register a model in watsonx.governance.
-        
-        Args:
-            model_id: Unique identifier for the model (e.g., "ibm/granite-4-h-small")
-            model_name: Human-readable model name
-            model_type: Type of model (foundation_model, custom, etc.)
-            provider: Model provider (IBM, OpenAI, etc.)
-            description: Model description
-            use_case_id: Optional AI use case ID to link the model to
-            metadata: Additional metadata to store with the model
-            
-        Returns:
-            Dictionary with registration results including asset_id
+
+        Checks if a subscription already exists for this model_id;
+        creates one if not. Returns the subscription details.
         """
         if not self.enabled:
-            logging.info(f"Governance disabled. Skipping registration for {model_id}")
-            return {"status": "skipped", "reason": "governance_disabled"}
-        
-        if not self.client:
-            logging.warning(f"Governance client not available. Mock registration for {model_id}")
-            return {
-                "status": "mock",
-                "model_id": model_id,
-                "model_name": model_name,
-                "registered_at": datetime.utcnow().isoformat()
-            }
-        
+            return {"status": "offline", "model_id": model_id}
+
         try:
-            # Prepare model entry
-            model_entry = {
-                "model_id": model_id,
-                "name": model_name,
-                "model_type": model_type,
-                "provider": provider,
-                "description": description or f"{model_name} for Financial Risk Management",
-                "registered_at": datetime.utcnow().isoformat(),
-                "metadata": metadata or {}
+            # Check existing subscriptions
+            existing = self._find_subscription(model_id)
+            if existing:
+                logger.info(f"ModelRegistry: model {model_id} already registered as {existing['id']}")
+                entry = {
+                    "status": "already_registered",
+                    "model_id": model_id,
+                    "subscription_id": existing["id"],
+                    "governance_url": f"{GOVERNANCE_BASE_URL}/openscale/{self.INSTANCE_ID}/v2/subscriptions/{existing['id']}",
+                }
+                self._model_cache[model_id] = entry
+                return entry
+
+            # Create new subscription
+            asset_id = f"{model_id.replace('/', '-')}-{int(time.time())}"
+            payload = {
+                "data_mart_id": self.INSTANCE_ID,
+                "service_provider_id": self.SERVICE_PROVIDER_ID,
+                "asset": {
+                    "asset_id": asset_id,
+                    "name": model_name,
+                    "asset_type": "model",
+                    "asset_properties": {
+                        "model_type": model_type,
+                        "runtime_environment": "Python 3.11",
+                        "input_data_type": "structured",
+                        "description": description or f"{model_name} — {provider}",
+                    },
+                },
+                "deployment": {
+                    "deployment_id": f"{asset_id}-deployment",
+                    "name": f"{model_name} deployment",
+                    "deployment_type": "online",
+                    "url": "https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud",
+                },
             }
-            
-            # Add use case link if provided
-            if use_case_id:
-                model_entry["use_case_id"] = use_case_id
-            
-            # Register with governance (using facts client)
-            # Note: Actual implementation depends on specific governance API
-            logging.info(f"Registering model {model_id} in watsonx.governance")
-            
-            # Store model entry in governance catalog
-            asset_id = self._create_model_asset(model_entry)
-            
-            return {
-                "status": "success",
-                "asset_id": asset_id,
-                "model_id": model_id,
-                "model_name": model_name,
-                "catalog_id": self.catalog_id,
-                "registered_at": model_entry["registered_at"]
-            }
-            
-        except Exception as e:
-            logging.error(f"Failed to register model {model_id}: {e}")
-            return {
-                "status": "error",
-                "model_id": model_id,
-                "error": str(e)
-            }
-    
-    def _create_model_asset(self, model_entry: Dict[str, Any]) -> str:
-        """
-        Create a model asset in the governance catalog.
-        
-        Args:
-            model_entry: Model metadata
-            
-        Returns:
-            Asset ID of the created model
-        """
-        # This is a placeholder for the actual governance API call
-        # The real implementation would use the AIGovFactsClient to create an asset
-        
-        # For now, return a mock asset ID
-        asset_id = f"asset_{model_entry['model_id'].replace('/', '_')}_{datetime.utcnow().timestamp()}"
-        logging.info(f"Created model asset: {asset_id}")
-        return asset_id
-    
-    def update_model_metadata(
-        self,
-        model_id: str,
-        metadata: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Update metadata for a registered model.
-        
-        Args:
-            model_id: Model identifier
-            metadata: Metadata to update
-            
-        Returns:
-            Update result
-        """
-        if not self.enabled or not self.client:
-            return {"status": "skipped", "reason": "governance_disabled_or_unavailable"}
-        
-        try:
-            logging.info(f"Updating metadata for model {model_id}")
-            # Implementation would update the model asset in governance
-            return {
-                "status": "success",
-                "model_id": model_id,
-                "updated_at": datetime.utcnow().isoformat()
-            }
-        except Exception as e:
-            logging.error(f"Failed to update model metadata: {e}")
-            return {"status": "error", "error": str(e)}
-    
-    def get_model_info(self, model_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve model information from governance.
-        
-        Args:
-            model_id: Model identifier
-            
-        Returns:
-            Model information or None if not found
-        """
-        if not self.enabled or not self.client:
-            return None
-        
-        try:
-            logging.info(f"Retrieving info for model {model_id}")
-            # Implementation would query the governance catalog
-            return {
-                "model_id": model_id,
+            resp = requests.post(
+                f"{self._base()}/subscriptions",
+                headers=self._headers(),
+                json=payload,
+                timeout=20,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            sub_id: str = data.get("metadata", {}).get("id", "unknown")
+
+            entry = {
                 "status": "registered",
-                "retrieved_at": datetime.utcnow().isoformat()
-            }
-        except Exception as e:
-            logging.error(f"Failed to retrieve model info: {e}")
-            return None
-    
-    def link_to_use_case(
-        self,
-        model_id: str,
-        use_case_id: str
-    ) -> Dict[str, Any]:
-        """
-        Link a model to an AI use case in governance.
-        
-        Args:
-            model_id: Model identifier
-            use_case_id: AI use case identifier
-            
-        Returns:
-            Link result
-        """
-        if not self.enabled or not self.client:
-            return {"status": "skipped", "reason": "governance_disabled_or_unavailable"}
-        
-        try:
-            logging.info(f"Linking model {model_id} to use case {use_case_id}")
-            # Implementation would create the link in governance
-            return {
-                "status": "success",
                 "model_id": model_id,
-                "use_case_id": use_case_id,
-                "linked_at": datetime.utcnow().isoformat()
+                "model_name": model_name,
+                "provider": provider,
+                "subscription_id": sub_id,
+                "governance_url": f"{GOVERNANCE_BASE_URL}/openscale/{self.INSTANCE_ID}/v2/subscriptions/{sub_id}",
+                "registered_at": datetime.now(timezone.utc).isoformat(),
+                "metadata": metadata or {},
             }
-        except Exception as e:
-            logging.error(f"Failed to link model to use case: {e}")
-            return {"status": "error", "error": str(e)}
+            self._model_cache[model_id] = entry
+            logger.info(f"ModelRegistry: registered {model_id} → subscription {sub_id}")
+            return entry
+
+        except Exception as exc:
+            logger.error(f"ModelRegistry.register_model failed for {model_id}: {exc}")
+            return {"status": "error", "model_id": model_id, "error": str(exc)}
+
+    def get_model_info(self, model_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve model info from watsonx.governance (subscription details)."""
+        if not self.enabled:
+            return self._model_cache.get(model_id)
+
+        try:
+            sub = self._find_subscription(model_id)
+            if not sub:
+                return self._model_cache.get(model_id)
+
+            sub_id = sub["id"]
+            resp = requests.get(
+                f"{self._base()}/subscriptions/{sub_id}",
+                headers=self._headers(),
+                timeout=10,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return {
+                "model_id": model_id,
+                "subscription_id": sub_id,
+                "status": data.get("entity", {}).get("status", {}).get("state"),
+                "deployment_name": data.get("entity", {}).get("deployment", {}).get("name"),
+                "created_at": data.get("metadata", {}).get("created_at"),
+                "governance_url": f"{GOVERNANCE_BASE_URL}/openscale/{self.INSTANCE_ID}/v2/subscriptions/{sub_id}",
+            }
+        except Exception as exc:
+            logger.error(f"ModelRegistry.get_model_info failed for {model_id}: {exc}")
+            return None
+
+    def list_registered_models(self) -> Dict[str, Any]:
+        """List all subscriptions in watsonx.governance."""
+        if not self.enabled:
+            return {"models": list(self._model_cache.values()), "source": "local_cache"}
+
+        try:
+            resp = requests.get(
+                f"{self._base()}/subscriptions",
+                headers=self._headers(),
+                timeout=10,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            subs = data.get("subscriptions", [])
+            return {
+                "models": [
+                    {
+                        "subscription_id": s.get("metadata", {}).get("id"),
+                        "asset_name": s.get("entity", {}).get("asset", {}).get("name"),
+                        "asset_id": s.get("entity", {}).get("asset", {}).get("asset_id"),
+                        "status": s.get("entity", {}).get("status", {}).get("state"),
+                        "created_at": s.get("metadata", {}).get("created_at"),
+                    }
+                    for s in subs
+                ],
+                "total": len(subs),
+                "source": "watsonx_governance",
+            }
+        except Exception as exc:
+            logger.error(f"ModelRegistry.list_registered_models failed: {exc}")
+            return {"models": [], "error": str(exc)}
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _find_subscription(self, model_id: str) -> Optional[Dict[str, Any]]:
+        """Find a subscription whose asset_id or asset_name matches model_id."""
+        try:
+            resp = requests.get(
+                f"{self._base()}/subscriptions",
+                headers=self._headers(),
+                timeout=10,
+            )
+            resp.raise_for_status()
+            for sub in resp.json().get("subscriptions", []):
+                asset = sub.get("entity", {}).get("asset", {})
+                if asset.get("asset_id", "").startswith(model_id.replace("/", "-")) or \
+                   model_id in asset.get("name", ""):
+                    return sub.get("metadata", {})
+        except Exception as exc:
+            logger.warning(f"_find_subscription error: {exc}")
+        return None
 
 
 # Made with Bob
