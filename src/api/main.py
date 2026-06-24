@@ -481,7 +481,7 @@ async def assess_risk(request: RiskAssessmentRequest):
                 risk_score=risk_score,
                 risk_level=risk_level,
                 aml_patterns_count=len(aml_patterns),
-                tx_count=history['statistics'].get('transaction_count', 0),
+                tx_count=history['statistics'].get('total_transactions', history['statistics'].get('transaction_count', 0)),
             )
 
         return response
