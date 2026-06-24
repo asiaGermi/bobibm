@@ -13,14 +13,17 @@ Each tool makes HTTP calls to the live API on IBM Cloud Code Engine.
 """
 
 import asyncio
+import os
 import httpx
 from typing import Any, Dict, List, Optional
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
-# API Configuration
-API_BASE_URL = "https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud"
+API_BASE_URL = os.environ.get(
+    "API_BASE_URL",
+    "https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud"
+)
 API_TIMEOUT = 30.0
 
 # Initialize MCP Server
@@ -371,18 +374,53 @@ def format_explanation(result: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+async def run_sse_server():
+    """Run MCP server in SSE/HTTP mode for cloud deployment."""
+    from mcp.server.sse import SseServerTransport
+    from starlette.applications import Starlette
+    from starlette.routing import Route, Mount
+    from starlette.responses import JSONResponse
+    from starlette.requests import Request
+    import uvicorn
+
+    sse = SseServerTransport("/messages/")
+
+    async def handle_sse(request: Request):
+        async with sse.connect_sse(
+            request.scope, request.receive, request._send,
+        ) as streams:
+            await app.run(streams[0], streams[1], app.create_initialization_options())
+
+    async def handle_health(request: Request):
+        return JSONResponse({"status": "ok", "service": "financial-risk-mcp", "tools": 5})
+
+    starlette_app = Starlette(routes=[
+        Route("/health", handle_health),
+        Route("/sse", handle_sse),
+        Mount("/messages/", app=sse.handle_post_message),
+    ])
+
+    port = int(os.environ.get("PORT", "8080"))
+    config = uvicorn.Config(starlette_app, host="0.0.0.0", port=port, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
+
+
 async def main():
-    """Run the MCP server."""
+    """Run the MCP server — stdio locally, SSE in cloud (MCP_TRANSPORT=sse)."""
     global http_client
+    transport = os.environ.get("MCP_TRANSPORT", "stdio")
     try:
-        async with stdio_server() as (read_stream, write_stream):
-            await app.run(
-                read_stream,
-                write_stream,
-                app.create_initialization_options()
-            )
+        if transport == "sse":
+            await run_sse_server()
+        else:
+            async with stdio_server() as (read_stream, write_stream):
+                await app.run(
+                    read_stream,
+                    write_stream,
+                    app.create_initialization_options()
+                )
     finally:
-        # Cleanup HTTP client on shutdown
         if http_client is not None:
             await http_client.aclose()
             http_client = None

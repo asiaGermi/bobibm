@@ -29,18 +29,15 @@ USER mcpuser
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    MCP_TRANSPORT=sse \
+    PORT=8080
 
-# Expose port for SSE transport
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
-# Run MCP server
-# For SSE transport, we need to wrap it with an HTTP server
-# For now, use stdio mode (will be enhanced for SSE in production)
 CMD ["python", "server.py"]
 
 # Made with Bob
