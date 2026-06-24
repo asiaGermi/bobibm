@@ -726,7 +726,7 @@
                     labels: ['Low', 'Medium', 'High', 'Critical'],
                     datasets: [{
                         label: 'Risk Level',
-                        data: levels.map(l => l === riskLevel ? 100 : 15),
+                        data: levels.map(l => l === riskLevel ? 100 : 0),
                         backgroundColor: levels.map(l => l === riskLevel ? getLevelColor(l) : '#e0e0e0'),
                         borderWidth: 0,
                         borderRadius: 8
@@ -785,10 +785,12 @@
                 const res = await fetch(baseUrl + '/analyze/transaction', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail || JSON.stringify(data));
+                const ad = data.anomaly_detection || {};
+                const anomTypes = ad.anomaly_types || [];
                 el.innerHTML = resultBox(`<strong>Account:</strong> ${data.account_id}<br>
-                    <strong>Risk Score:</strong> ${data.risk_score != null ? (data.risk_score*100).toFixed(1)+'%' : '-'}<br>
-                    <strong>Risk Level:</strong> ${data.risk_level || '-'}<br>
-                    <strong>Anomalie:</strong> ${(data.anomalies||[]).length}<br>
+                    <strong>È anomala:</strong> ${ad.is_anomalous ? '⚠️ Sì' : '✅ No'}<br>
+                    <strong>Anomaly Score:</strong> ${ad.anomaly_score != null ? (ad.anomaly_score*100).toFixed(0)+'%' : '-'}<br>
+                    <strong>Tipi anomalia:</strong> ${anomTypes.length > 0 ? anomTypes.join(', ') : 'Nessuna'}<br>
                     <details style="margin-top:8px"><summary style="cursor:pointer;color:#667eea">Dati completi</summary>
                     <pre style="font-size:0.8em;margin-top:8px;overflow-x:auto">${JSON.stringify(data, null, 2)}</pre></details>`);
             } catch(e) { el.innerHTML = resultBox('❌ ' + e.message, true); }

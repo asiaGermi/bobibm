@@ -130,8 +130,9 @@ class GovernanceMonitor:
                 "values": [[account_id, lookback_days]],
             },
             "response": {
-                "fields": ["risk_score", "risk_level", "aml_patterns_count", "transaction_count"],
-                "values": [[risk_score, risk_level, aml_patterns_count, tx_count]],
+                # prediction + prediction_probability required by OpenScale UI
+                "fields": ["prediction", "prediction_probability", "risk_score", "risk_level", "aml_patterns_count", "transaction_count"],
+                "values": [[risk_level, risk_score, risk_score, risk_level, aml_patterns_count, tx_count]],
             },
             "scoring_timestamp": ts,
             "deployment_id": self.DEPLOYMENT_ID,
@@ -269,40 +270,63 @@ class GovernanceMonitor:
             return {"error": str(exc), "records": []}
 
     def get_audit_entries(self, limit: int = 100, account_id: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Return audit entries: cloud records if available, else local log."""
+        """Return audit entries: local records merged with valid cloud records."""
         entries = []
+        seen_ids: set = set()
+
+        # Local entries always included (source of truth for current session)
+        local_entries = self.get_recent_logs(limit=limit, log_type="risk_assessment")
+        for e in local_entries:
+            e = dict(e)
+            e["source"] = "local"
+            sid = e.get("scoring_id", "")
+            if sid:
+                seen_ids.add(sid)
+            entries.append(e)
+
+        # Cloud entries supplement local (records from previous pod instances)
         if self.enabled:
             raw = self.get_cloud_records(limit=limit)
             records = raw.get("records", [])
             for r in records:
                 entity = r.get("entity", r)
-                req = entity.get("request", {})
-                resp = entity.get("response", {})
-                req_fields = req.get("fields", [])
-                req_values = req.get("values", [[]])[0]
-                resp_fields = resp.get("fields", [])
-                resp_values = resp.get("values", [[]])[0]
-                req_data = dict(zip(req_fields, req_values))
-                resp_data = dict(zip(resp_fields, resp_values))
                 meta = r.get("metadata", {})
+
+                # IBM OpenScale stores fields as flat entity.values dict
+                values = entity.get("values", {})
+                # Fallback: try nested request/response format
+                if not values:
+                    req = entity.get("request", {})
+                    resp = entity.get("response", {})
+                    req_fields = req.get("fields", [])
+                    req_values = req.get("values", [[]])[0] if req.get("values") else []
+                    resp_fields = resp.get("fields", [])
+                    resp_values = resp.get("values", [[]])[0] if resp.get("values") else []
+                    values = dict(zip(req_fields, req_values))
+                    values.update(dict(zip(resp_fields, resp_values)))
+
+                cloud_account_id = values.get("account_id", "")
+                # Skip records without account_id (not a risk_assessment, or malformed)
+                if not cloud_account_id:
+                    continue
+
+                cloud_id = meta.get("id", values.get("scoring_id", entity.get("scoring_id", "")))
+                if cloud_id in seen_ids:
+                    continue
+
                 entry = {
-                    "scoring_id": meta.get("id", entity.get("scoring_id", "")),
-                    "timestamp": entity.get("scoring_timestamp", meta.get("created_at", "")),
+                    "scoring_id": cloud_id,
+                    "timestamp": values.get("scoring_timestamp", entity.get("scoring_timestamp", meta.get("created_at", ""))),
                     "type": "risk_assessment",
-                    "account_id": req_data.get("account_id", ""),
-                    "lookback_days": req_data.get("lookback_days", 30),
-                    "risk_score": resp_data.get("risk_score", 0),
-                    "risk_level": resp_data.get("risk_level", ""),
-                    "aml_patterns_count": resp_data.get("aml_patterns_count", 0),
-                    "transaction_count": resp_data.get("transaction_count", 0),
+                    "account_id": cloud_account_id,
+                    "lookback_days": values.get("lookback_days", 30),
+                    "risk_score": values.get("risk_score", 0),
+                    "risk_level": values.get("risk_level", ""),
+                    "aml_patterns_count": values.get("aml_patterns_count", 0),
+                    "transaction_count": values.get("transaction_count", 0),
                     "source": "cloud",
                 }
                 entries.append(entry)
-
-        if not entries:
-            entries = self.get_recent_logs(limit=limit, log_type="risk_assessment", account_id=account_id)
-            for e in entries:
-                e["source"] = "local"
 
         if account_id:
             entries = [e for e in entries if e.get("account_id") == account_id]
