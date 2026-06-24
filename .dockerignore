@@ -90,6 +90,7 @@ run_api.py
 # Keep only necessary files
 !src/
 !data/
+!static/
 !requirements.txt
 
 # Exclude large data files not needed at runtime (app uses sample CSV)

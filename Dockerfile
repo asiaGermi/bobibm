@@ -38,6 +38,7 @@ RUN groupadd -r appuser && \
 # Copy application code
 COPY --chown=appuser:appuser src/ /app/src/
 COPY --chown=appuser:appuser data/ /app/data/
+COPY --chown=appuser:appuser static/ /app/static/
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
