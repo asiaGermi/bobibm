@@ -197,14 +197,22 @@
 
         .aml-empty { color: #28a745; font-style: italic; padding: 10px 0; }
 
+        .aml-patterns-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 15px;
+        }
         .aml-pattern {
             display: flex;
             align-items: flex-start;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e8e8e8;
             gap: 15px;
             padding: 12px 0;
             border-bottom: 1px solid #f0f0f0;
         }
-        .aml-pattern:last-child { border-bottom: none; }
+        .aml-pattern:last-child { border-bottom: none; border: 1px solid #e8e8e8; }
         .aml-badge {
             background: #dc3545;
             color: white;
@@ -695,14 +703,14 @@
 
             document.getElementById('metricAml').textContent = amlPatterns.length;
             document.getElementById('metricAccount').textContent = accountId;
-            document.getElementById('metricTime').textContent = new Date().toLocaleTimeString('it-IT');
+            document.getElementById('metricTime').textContent = new Date().toLocaleString('it-IT');
 
             // AML Patterns
             const amlDiv = document.getElementById('amlPatterns');
             if (amlPatterns.length === 0) {
                 amlDiv.innerHTML = '<p class="aml-empty">✅ Nessun pattern AML rilevato nel periodo analizzato.</p>';
             } else {
-                amlDiv.innerHTML = amlPatterns.map(p => `
+                amlDiv.innerHTML = `<div class="aml-patterns-grid">` + amlPatterns.map(p => `
                     <div class="aml-pattern">
                         <span class="aml-badge">⚠ ${p.pattern_type ?? 'UNKNOWN'}</span>
                         <div class="aml-info">
@@ -710,7 +718,7 @@
                             <div class="aml-desc">${p.description ?? ''}</div>
                             ${p.confidence != null ? `<div class="aml-confidence">Confidenza: ${(p.confidence * 100).toFixed(0)}%</div>` : ''}
                         </div>
-                    </div>`).join('');
+                    </div>`).join('') + `</div>`;
             }
 
             // Transaction stats
@@ -1024,7 +1032,7 @@
                             <td style="text-align:center">${fmt(e.aml_patterns_count)}</td>
                             <td style="text-align:center">${fmt(e.transaction_count)}</td>
                             <td style="text-align:center">${fmt(e.lookback_days)} gg</td>
-                            <td>${modelBadge(e.ai_model_used, e.ai_fallback)}</td>
+                            <td>${modelBadge(e.model_used, e.fallback_used)}</td>
                             <td class="audit-id">${e.scoring_id ? e.scoring_id.substring(0,8) + '...' : '-'}</td>
                         </tr>`).join('')}
                     </tbody>

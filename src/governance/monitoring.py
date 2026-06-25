@@ -274,11 +274,27 @@ class GovernanceMonitor:
         entries = []
         seen_ids: set = set()
 
+        # Build model lookup from explanation logs (account_id -> model info)
+        explanation_logs = self.get_recent_logs(limit=limit, log_type="explanation")
+        model_lookup: dict = {}
+        for ex in explanation_logs:
+            aid = ex.get("account_id", "")
+            if aid and aid not in model_lookup:
+                model_lookup[aid] = {
+                    "model_used": ex.get("model_used", ""),
+                    "fallback_used": ex.get("fallback_used", False),
+                }
+
         # Local entries always included (source of truth for current session)
         local_entries = self.get_recent_logs(limit=limit, log_type="risk_assessment")
         for e in local_entries:
             e = dict(e)
             e["source"] = "local"
+            # Enrich with model info from explanation logs
+            aid = e.get("account_id", "")
+            if aid in model_lookup:
+                e["model_used"] = model_lookup[aid]["model_used"]
+                e["fallback_used"] = model_lookup[aid]["fallback_used"]
             sid = e.get("scoring_id", "")
             if sid:
                 seen_ids.add(sid)
