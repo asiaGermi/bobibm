@@ -781,9 +781,13 @@ async def governance_metrics():
 async def governance_logs(limit: int = 20, log_type: Optional[str] = None):
     if governance_monitor is None:
         raise HTTPException(status_code=503, detail="Governance monitor not initialized")
+    # Use get_audit_entries which merges local + cloud (resilient to pod restarts)
+    entries = governance_monitor.get_audit_entries(limit=limit)
+    if log_type:
+        entries = [e for e in entries if e.get("type") == log_type]
     return {
-        "logs": governance_monitor.get_recent_logs(limit=limit, log_type=log_type),
-        "total": len(governance_monitor._local_log),
+        "logs": entries,
+        "total": len(entries),
     }
 
 

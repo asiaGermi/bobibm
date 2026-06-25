@@ -35,17 +35,20 @@ https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud
 │  │  │  Financial Risk Orchestrator Agent                  │  │  │
 │  │  │  - Coordina workflow multi-agente                   │  │  │
 │  │  │  - LLM: ibm/granite-3-8b-instruct                   │  │  │
-│  │  │  - Tools: 4 skills specializzati                    │  │  │
+│  │  │  - Tools: 5 MCP tools (via MCP Server)              │  │  │
 │  │  └────────────────────────────────────────────────────┘  │  │
-│  │         │         │         │         │                   │  │
-│  │         ▼         ▼         ▼         ▼                   │  │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │  │
-│  │  │Transaction│ │   Risk   │ │  Fraud   │ │Recommend │   │  │
-│  │  │ Analysis  │ │Assessment│ │Detection │ │ Actions  │   │  │
-│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘   │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                              │                                   │
-│                              │ REST API                          │
+│                              │ MCP Protocol (SSE)                │
+│                              ▼                                   │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │        MCP Server — Code Engine (eu-de, port 8080)        │  │
+│  │  - 5 MCP Tools: analyzeTransaction, assessRisk,           │  │
+│  │    detectFraud, recommendActions, explainRisk              │  │
+│  │  - Proxy HTTP verso FastAPI                                │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                              │                                   │
+│                              │ REST API (HTTP)                   │
 │                              ▼                                   │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │        IBM Cloud Code Engine (eu-de)                      │  │
@@ -89,7 +92,7 @@ https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud
 │  │         ▼                                                  │  │
 │  │  ┌────────────────────────────────────────────────────┐  │  │
 │  │  │  Data Layer                                         │  │  │
-│  │  │  - IBM Synthetic Data Sets (15k transactions)      │  │  │
+│  │  │  - IBM Synthetic Data Sets (28k+ transactions)      │  │  │
 │  │  │  - LRU Cache for performance                       │  │  │
 │  │  │  - AML pattern detection algorithms                │  │  │
 │  │  └────────────────────────────────────────────────────┘  │  │
@@ -176,16 +179,18 @@ https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud
 
 | Servizio | Utilizzo | Configurazione |
 |----------|----------|----------------|
-| **IBM Cloud Code Engine** | Hosting API containerizzata | - Region: eu-de<br>- Auto-scaling: 1-10 instances<br>- Port: 8000<br>- Memory: 512Mi-1Gi |
+| **IBM Cloud Code Engine** | Hosting API containerizzata | - Region: eu-de<br>- Scale: 1 istanza fissa (min=1, max=1)<br>- Port: 8000<br>- Memory: 512Mi-1Gi |
+| **IBM Cloud Code Engine** | Hosting MCP Server | - Region: eu-de<br>- Port: 8080<br>- 5 MCP Tools (proxy per FastAPI) |
 | **IBM Container Registry** | Storage immagini Docker | - Namespace: financial-risk<br>- Registry: private.de.icr.io |
-| **watsonx Orchestrate** | Orchestrazione agenti | - Instance: wxo-675000bo4y<br>- Region: eu-de<br>- 4 tools + 1 orchestrator agent |
+| **watsonx Orchestrate** | Orchestrazione agenti | - Instance: wxo-675000bo4y<br>- Region: eu-de<br>- 5 tools + 1 orchestrator agent (via MCP) |
 | **watsonx.ai** | LLM per spiegazioni | - Model: ibm/granite-4-h-small<br>- Project: frm-granite<br>- Region: us-south |
+| **watsonx.governance** | AI governance, audit trail, factsheets | - Instance: bc2c304b (eu-de)<br>- AI Use Case: Financial Risk Management - AML Detection<br>- Compliance: EU AI Act, GDPR, 6AMLD |
 
 ### 📊 IBM Synthetic Data Sets
 
 | Dataset | Records | Utilizzo |
 |---------|---------|----------|
-| **Home Insurance Transactions** | 15,000+ | Analisi transazioni, pattern AML, risk scoring |
+| **Home Insurance Transactions** | 28.374+ | Analisi transazioni, pattern AML, risk scoring |
 | **Core Banking** | Available | Future integration |
 | **Payment Cards** | Available | Future integration |
 
@@ -341,7 +346,62 @@ instructions: |
 
 ---
 
-## Slide 8: Differenziatori Competitivi
+## Slide 8: IBM watsonx.governance Integration
+
+### 🛡️ AI Governance per il Settore Finanziario
+
+#### Componenti Implementati
+
+| Componente | Classe | Funzione |
+|------------|--------|----------|
+| **GovernanceMonitor** | `src/governance/monitoring.py` | Log predizioni Granite, metriche, compliance report |
+| **ModelRegistry** | `src/governance/model_registry.py` | Registra modelli via OpenScale REST API |
+| **FactsheetManager** | `src/governance/factsheet_manager.py` | Crea AI Factsheets su Watson Studio catalog |
+
+#### AI Use Case Attivo
+```
+Nome:        Financial Risk Management - AML Detection
+Status:      Draft (IDA FRICON, Jun 23, 2026)
+Risk Level:  HIGH
+Scopo:       Rilevamento pattern AML e risk assessment per compliance officer
+Inventory:   Default Inventory (Frankfurt, eu-de)
+```
+
+#### AI Factsheet — Granite Model
+```
+Asset:       Financial Risk — Granite Explanation Model
+Model ID:    ibm/granite-4-h-small
+Lifecycle:   Granite LLM Approach
+Compliance:  EU AI Act · GDPR · AML Directive 6AMLD
+Data Residency: EU (Frankfurt, eu-de)
+Human Oversight: Required per critical risk decisions
+```
+
+#### Flusso Governance
+
+```
+Ogni chiamata a /api/v1/explain
+        │
+        ▼
+Explanation Agent (Granite LLM)
+        │
+        ├─> Risposta all'utente
+        │
+        └─> GovernanceMonitor.log_explanation()
+                ├─> Timestamp, account_id, risk_score, risk_level
+                ├─> Explanation generata, tokens_used, execution_time
+                └─> ModelRegistry + FactsheetManager su watsonx.governance
+```
+
+#### Valore per Compliance
+- ✅ Audit trail completo di ogni inferenza AI
+- ✅ Documentazione modello (purpose, data, performance, fairness)
+- ✅ Conforme EU AI Act (sistema ad alto rischio — settore finanziario)
+- ✅ Tracciabilità per audit regolamentari AML
+
+---
+
+## Slide 9: Differenziatori Competitivi
 
 ### 🏆 Cosa Ci Distingue
 
@@ -355,7 +415,13 @@ instructions: |
 - ✅ Fallback graceful se LLM non disponibile
 - ✅ Interpretabilità per utenti non tecnici
 
-#### 3. **Production-Ready Architecture**
+#### 3. **IBM watsonx.governance**
+- ✅ AI Use Case registrato (Risk: HIGH)
+- ✅ AI Factsheet per Granite model
+- ✅ Audit trail completo ogni inferenza
+- ✅ Conforme EU AI Act, GDPR, 6AMLD
+
+#### 4. **Production-Ready Architecture**
 - ✅ Containerizzato con Docker
 - ✅ Auto-scaling su IBM Cloud Code Engine
 - ✅ Health monitoring e observability
@@ -375,7 +441,7 @@ instructions: |
 
 ---
 
-## Slide 9: Metriche e Performance
+## Slide 10: Metriche e Performance
 
 ### 📊 System Metrics
 
@@ -383,9 +449,9 @@ instructions: |
 |---------|--------|------|
 | **API Response Time** | < 500ms | P95 per singolo endpoint |
 | **Orchestrator Workflow** | < 3s | End-to-end analysis completa |
-| **Data Layer** | 15,000+ transactions | IBM Synthetic Data Sets |
+| **Data Layer** | 28.374+ transactions | IBM Synthetic Data Sets |
 | **Uptime** | 99.9% | IBM Cloud Code Engine SLA |
-| **Auto-scaling** | 1-10 instances | Basato su carico |
+| **Auto-scaling** | 1 istanza fissa | min=1, max=1 (stabilità demo) |
 | **Concurrent Requests** | 100+ | Per instance |
 
 ### 🎯 Accuracy Metrics
@@ -399,54 +465,60 @@ instructions: |
 
 ---
 
-## Slide 10: Demo Flow
+## Slide 11: Demo Flow
 
 ### 🎬 Scenario Demo
 
-**Caso d'Uso:** Analisi rischio per account sospetto
+**Caso d'Uso:** Analisi rischio per account critico Bitcoin
 
 **Input:**
 ```json
 {
-  "account_id": "ACC-12345",
-  "analysis_type": "comprehensive"
+  "account_id": "100428A51",
+  "lookback_days": 90
 }
 ```
 
 **Workflow:**
-1. ⚡ Orchestrator riceve richiesta
-2. 🔍 Risk Assessment: calcola score 0.78 (HIGH)
-3. 🚨 Fraud Detection: rileva temporal anomaly
-4. 📊 Transaction Analysis: rileva fan-out pattern
-5. 💡 Recommendation: genera ALERT + REVIEW
+1. ⚡ Orchestrator riceve richiesta via watsonx Orchestrate
+2. 🔍 Risk Assessment: calcola score 0.70 (HIGH) — 13.073 tx Bitcoin, 1.147 destinatari
+3. 🚨 Fraud Detection: rileva temporal anomaly + laundering history
+4. 📊 Transaction Analysis: rileva fan-out massivo (100% Bitcoin)
+5. 💡 Recommendation: genera ALERT + BLOCK
 6. 📝 Explanation: Granite spiega in linguaggio naturale
 
 **Output:**
 ```json
 {
-  "risk_score": 0.78,
+  "risk_score": 0.70,
   "risk_level": "HIGH",
-  "patterns_detected": ["fan_out", "high_frequency"],
-  "fraud_signals": ["temporal_anomaly"],
-  "recommended_actions": ["ALERT", "REVIEW"],
-  "explanation": "This account shows high risk due to unusual transaction patterns..."
+  "patterns_detected": ["fan_out_massive", "high_risk_currency"],
+  "fraud_signals": ["temporal_anomaly", "laundering_history"],
+  "recommended_actions": ["ALERT", "BLOCK"],
+  "explanation": "Questo conto presenta segnali critici di riciclaggio..."
 }
 ```
 
 **Tempo Totale:** < 3 secondi
 
+**Altri account demo:**
+- `8000EBD30` → ~0% LOW — confronto account pulito
+- `812D22980` → 53.9% MEDIUM — circular flow, 93% tx laundering
+
 ---
 
-## Slide 11: Roadmap e Future Enhancements
+## Slide 12: Roadmap e Future Enhancements
 
 ### 🚀 Prossimi Sviluppi
 
-#### Phase 2 (Post-Demo)
-- [ ] **watsonx.governance Integration**
-  - Model fairness monitoring
-  - Drift detection per Granite LLM
-  - Compliance reporting
+#### Completato per la Demo
+- ✅ **watsonx.governance Integration**
+  - AI Use Case registrato (Risk: HIGH)
+  - AI Factsheet per Granite model (GovernanceMonitor, ModelRegistry, FactsheetManager)
+  - Audit trail automatico ogni inferenza
+  - Conforme EU AI Act, GDPR, 6AMLD
 
+#### Phase 2 (Post-Demo)
 - [ ] **Additional Data Sources**
   - Core Banking dataset integration
   - Payment Cards dataset integration
@@ -475,7 +547,7 @@ instructions: |
 
 ---
 
-## Slide 12: Team e Tecnologie
+## Slide 13: Team e Tecnologie
 
 ### 👥 Team
 - **Architecture & Development:** IBM Bob (AI Assistant)
@@ -509,17 +581,18 @@ instructions: |
 
 ---
 
-## Slide 13: Conclusioni
+## Slide 14: Conclusioni
 
 ### ✅ Obiettivi Raggiunti
 
 1. ✅ **Sistema agentico containerizzato** deployato su IBM Cloud
 2. ✅ **5 agenti specializzati** con responsabilità chiare
-3. ✅ **Orchestrazione watsonx Orchestrate** funzionante
+3. ✅ **Orchestrazione watsonx Orchestrate** funzionante (5 tool + orchestratore)
 4. ✅ **IBM Synthetic Data Sets** integrati (15k+ transazioni)
 5. ✅ **REST API** esposte e documentate (OpenAPI)
 6. ✅ **IBM watsonx.ai Granite** per spiegazioni intelligenti
 7. ✅ **Production-ready** con auto-scaling e monitoring
+8. ✅ **IBM watsonx.governance** — AI Use Case, Factsheet, audit trail (EU AI Act compliant)
 
 ### 🎯 Value Proposition
 
@@ -527,6 +600,7 @@ instructions: |
 - Riduzione tempo analisi rischio: da ore a secondi
 - Detection automatica pattern AML
 - Spiegazioni interpretabili per compliance
+- Decisioni AI auditabili e conformi EU AI Act / 6AMLD
 - Scalabilità enterprise su IBM Cloud
 - Integrabile in processi esistenti
 

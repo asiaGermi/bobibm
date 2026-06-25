@@ -1,7 +1,7 @@
 # TODO — IBM Open Agentic Builders · Track A: Financial Risk Management
 
 **Demo**: 1 luglio 2026 · **Finale**: 8 luglio 2026 · **Oggi**: 24 giugno 2026 · **Giorni rimasti**: 7  
-**Aggiornato**: 24 giugno 2026 (pomeriggio)
+**Aggiornato**: 24 giugno 2026 (sera)
 
 ---
 
@@ -183,6 +183,13 @@
   - ✅ Tab Audit Trail: ricerca per account, tabella storico, export CSV
   - ✅ AI Explanation (IBM Granite) mostrata prima dei grafici
 - ✅ Documentazione aggiornata: static/README.md, docs/demo/DEMO_PREPARATION_SUMMARY.md, README.md
+- ✅ Fix audit trail: merge locale+cloud, skip record cloud senza account_id (24 giu sera)
+- ✅ Fix governance/logs: usa get_audit_entries (resiliente a pod restart e multi-istanza) (24 giu sera)
+- ✅ Fix levelChart: barre hardcoded 15→0, ora mostra solo livello corrente (24 giu sera)
+- ✅ Fix Analisi Transazione GUI: mostra is_anomalous + anomaly_types invece di campi inesistenti (24 giu sera)
+- ✅ Code Engine min-scale=1 max-scale=1: zero cold start, sempre stessa istanza (24 giu sera)
+- ✅ Watson OpenScale: verification subscription attiva, fix formato payload (prediction + prediction_probability) (24 giu sera)
+- ❌ Push + rebuild Code Engine con tutti i fix (da fare)
 - ❌ MCP server deploy su IBM Cloud Code Engine
 - ❌ Prompt template + Evaluation Studio (watsonx.governance grafici)
 - ❌ Video demo
@@ -212,7 +219,7 @@
 | 8 · Deploy IBM Cloud + Granite live | ✅ Completo — endpoint pubblico live | 100% |
 | 9 · Testing | 🔄 Parziale | 15% |
 | 10 · Demo | 🔄 Parziale (docs ✅, video ❌) | 40% |
-| 11 · Miglioramenti competitivi | 🔄 Parziale (governance reale ✅, dashboard 4-tab ✅, audit trail ✅, MCP deploy ❌, Eval Studio ❌) | 85% |
+| 11 · Miglioramenti competitivi | 🔄 Parziale (governance ✅, dashboard ✅, audit trail ✅, OpenScale fix ✅, MCP deploy ❌, Eval Studio ❌) | 90% |
 
 ---
 
@@ -238,6 +245,9 @@
 | 24 giu | Audit Trail + CSV export | ✅ |
 | 24 giu | Tutti gli endpoint API esposti in GUI | ✅ |
 | 24 giu | Documentazione aggiornata (README, DEMO_SUMMARY, static/README) | ✅ |
-| 24-25 giu | MCP server deploy su Code Engine | ❌ |
-| 25-27 giu | Evaluation Studio (watsonx.governance) | ❌ |
+| 24 giu (sera) | Fix audit trail + governance logs + GUI bugs + OpenScale payload format | ✅ |
+| 24 giu (sera) | Code Engine min-scale=1 (zero cold start) | ✅ |
+| 25 giu | Push + rebuild Code Engine con tutti i fix | ❌ |
+| 25-26 giu | MCP server deploy su Code Engine | ❌ |
+| 27-28 giu | Evaluation Studio (watsonx.governance) | ❌ |
 | 28-30 giu | Video demo | ❌ |
