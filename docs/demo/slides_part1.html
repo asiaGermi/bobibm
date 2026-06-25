@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>IBM Open Agentic Builders — Financial Risk Management</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    background: #161616;
+    color: #fff;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .slide {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    padding: 52px 80px;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .slide.active { display: flex; }
+
+  /* ─── Utility ─── */
+  .badge {
+    background: #0f62fe;
+    color: #fff;
+    padding: 5px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    display: inline-block;
+    align-self: center;
+  }
+  .badge.gray { background: #393939; }
+  .slide-title {
+    font-size: 34px;
+    font-weight: 700;
+    border-left: 4px solid #0f62fe;
+    padding-left: 18px;
+    margin-bottom: 32px;
+  }
+  .slide-label {
+    font-size: 12px;
+    color: #525252;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* ─── SLIDE 1 — Copertina ─── */
+  .slide-cover {
+    background: linear-gradient(135deg, #0a0a0a 0%, #161616 60%, #0f1f3d 100%);
+    align-items: center;
+    text-align: center;
+    gap: 22px;
+  }
+  .slide-cover h1 { font-size: 46px; font-weight: 700; line-height: 1.15; max-width: 820px; }
+  .slide-cover h1 span { color: #0f62fe; }
+  .slide-cover .subtitle { font-size: 20px; color: #a8b2c1; max-width: 680px; line-height: 1.5; }
+  .logos { display: flex; gap: 24px; align-items: center; margin-top: 12px; }
+  .logo-pill { border: 1px solid #393939; padding: 7px 22px; border-radius: 8px; font-size: 15px; font-weight: 600; color: #c6c6c6; }
+
+  /* ─── KPI grid (Slide 2) ─── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .kpi-card { background: #1c1c1c; border: 1px solid #262626; border-top: 3px solid #0f62fe; border-radius: 8px; padding: 26px 22px; display: flex; flex-direction: column; gap: 10px; }
+  .kpi-card .icon { font-size: 30px; }
+  .kpi-card .kpi-number { font-size: 34px; font-weight: 700; color: #0f62fe; }
+  .kpi-card .kpi-label { font-size: 14px; color: #a8b2c1; line-height: 1.5; }
+  .kpi-card .kpi-sub { font-size: 11px; color: #525252; margin-top: auto; }
+
+  /* ─── Bullet list (Slide 3) ─── */
+  .bullet-list { display: flex; flex-direction: column; gap: 16px; }
+  .bullet-item { display: flex; align-items: flex-start; gap: 18px; background: #1c1c1c; border: 1px solid #262626; border-radius: 8px; padding: 18px 22px; }
+  .bullet-icon { font-size: 26px; flex-shrink: 0; width: 32px; }
+  .bullet-content strong { font-size: 17px; color: #fff; display: block; margin-bottom: 3px; }
+  .bullet-content span { font-size: 14px; color: #a8b2c1; }
+
+  /* ─── Arch box (Slide 4, 7, 8) ─── */
+  .arch-box { background: #1c1c1c; border: 1px solid #262626; border-radius: 8px; padding: 24px 28px; font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 13px; color: #a8b2c1; line-height: 1.85; }
+  .arch-box .hl { color: #0f62fe; font-weight: 700; }
+  .arch-box .hl2 { color: #42be65; font-weight: 600; }
+  .arch-box .hl3 { color: #f1c21b; font-weight: 600; }
+
+  /* ─── KPI row (Slide 4, 10) ─── */
+  .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .kpi-small { background: #0f62fe; border-radius: 8px; padding: 16px 18px; text-align: center; }
+  .kpi-small .big { font-size: 26px; font-weight: 700; }
+  .kpi-small .small { font-size: 12px; color: #a8d4ff; margin-top: 3px; }
+
+  /* ─── Section divider ─── */
+  .slide-divider {
+    background: #0f1f3d;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 20px;
+  }
+  .slide-divider .part-num { font-size: 80px; font-weight: 800; color: #0f62fe; opacity: 0.3; line-height: 1; }
+  .slide-divider h2 { font-size: 40px; font-weight: 700; }
+  .slide-divider p { font-size: 18px; color: #a8b2c1; max-width: 600px; }
+
+  /* ─── Agents grid (Slide 7) ─── */
+  .agents-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .agent-card { background: #1c1c1c; border: 1px solid #262626; border-top: 3px solid #42be65; border-radius: 8px; padding: 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .agent-card .agent-num { font-size: 11px; color: #525252; font-weight: 600; letter-spacing: 1px; }
+  .agent-card .agent-name { font-size: 14px; font-weight: 700; color: #42be65; line-height: 1.3; }
+  .agent-card .agent-desc { font-size: 12px; color: #a8b2c1; line-height: 1.4; }
+  .agent-card .agent-output { font-size: 11px; color: #525252; margin-top: auto; font-style: italic; }
+
+  /* ─── IBM Stack (Slide 8) ─── */
+  .ibm-stack { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .ibm-card { background: #1c1c1c; border: 1px solid #262626; border-radius: 8px; padding: 18px 16px; }
+  .ibm-card .ibm-logo { font-size: 22px; margin-bottom: 6px; }
+  .ibm-card .ibm-name { font-size: 14px; font-weight: 700; color: #0f62fe; margin-bottom: 4px; }
+  .ibm-card .ibm-role { font-size: 12px; color: #a8b2c1; line-height: 1.4; }
+  .ibm-card .ibm-detail { font-size: 11px; color: #525252; margin-top: 6px; font-family: 'IBM Plex Mono', monospace; }
+
+  /* ─── Closing (Slide 10) ─── */
+  .check-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .check-item { display: flex; gap: 12px; align-items: flex-start; background: #1c1c1c; border: 1px solid #262626; border-radius: 8px; padding: 14px 16px; }
+  .check-item .ck { font-size: 18px; flex-shrink: 0; }
+  .check-item .ck-text { font-size: 14px; color: #a8b2c1; line-height: 1.4; }
+  .check-item .ck-text strong { color: #fff; display: block; margin-bottom: 2px; font-size: 15px; }
+
+  /* ─── Nav ─── */
+  .nav { position: fixed; bottom: 24px; right: 32px; display: flex; gap: 12px; align-items: center; }
+  .nav button { background: #262626; border: 1px solid #393939; color: #fff; padding: 7px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; font-family: inherit; transition: background 0.15s; }
+  .nav button:hover { background: #0f62fe; border-color: #0f62fe; }
+  .slide-counter { color: #525252; font-size: 13px; min-width: 52px; text-align: center; }
+  .slide-label-bottom { position: fixed; bottom: 28px; left: 32px; font-size: 12px; color: #393939; letter-spacing: 0.5px; }
+  .progress { position: fixed; bottom: 0; left: 0; height: 3px; background: #0f62fe; transition: width 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     PARTE 1 — IL PROBLEMA
+══════════════════════════════════════════════════════ -->
+
+<!-- SLIDE 1 — Copertina -->
+<div class="slide slide-cover active">
+  <span class="badge">IBM Open Agentic Builders Challenge — Track A</span>
+  <h1>Financial Risk Management<br>&amp; <span>AML Detection</span></h1>
+  <p class="subtitle">Un sistema multi-agente AI per il rilevamento automatico<br>del riciclaggio di denaro su IBM Cloud</p>
+  <div class="logos">
+    <div class="logo-pill">Accenture</div>
+    <div class="logo-pill">IBM watsonx</div>
+    <div class="logo-pill">IBM Code Engine</div>
+  </div>
+</div>
+
+<!-- SLIDE 2 — Cifre problema -->
+<div class="slide" style="background:#161616;gap:36px;">
+  <div class="slide-label">PARTE 1 — IL PROBLEMA</div>
+  <div class="slide-title">Il riciclaggio di denaro è una sfida sistemica</div>
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="icon">💰</div>
+      <div class="kpi-number">€2–5T</div>
+      <div class="kpi-label">Riciclati ogni anno — circa l'1% del PIL globale</div>
+      <div class="kpi-sub">Fonte: UNODC Money Laundering Report 2023</div>
+    </div>
+    <div class="kpi-card">
+      <div class="icon">⏱️</div>
+      <div class="kpi-number">2–4h</div>
+      <div class="kpi-label">Per analizzare un singolo account sospetto con approccio manuale</div>
+      <div class="kpi-sub">Con milioni di transazioni al giorno, non è scalabile</div>
+    </div>
+    <div class="kpi-card">
+      <div class="icon">⚖️</div>
+      <div class="kpi-number">Obbligo legale</div>
+      <div class="kpi-label">Banche e assicurazioni devono identificare e segnalare ogni anomalia</div>
+      <div class="kpi-sub">Sanzioni, revoca licenze, responsabilità penale</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3 — Sistemi tradizionali -->
+<div class="slide" style="background:#161616;gap:36px;">
+  <div class="slide-label">PARTE 1 — IL PROBLEMA</div>
+  <div class="slide-title">I sistemi tradizionali non scalano</div>
+  <div class="bullet-list">
+    <div class="bullet-item">
+      <div class="bullet-icon">❌</div>
+      <div class="bullet-content"><strong>Lenti</strong><span>Ore per ogni caso sospetto, mentre le transazioni continuano a crescere</span></div>
+    </div>
+    <div class="bullet-item">
+      <div class="bullet-icon">❌</div>
+      <div class="bullet-content"><strong>Costosi</strong><span>Analisti AML specializzati, turni H24 — costi insostenibili per istituzioni medio-piccole</span></div>
+    </div>
+    <div class="bullet-item">
+      <div class="bullet-icon">❌</div>
+      <div class="bullet-content"><strong>Non scalabili</strong><span>Il volume dei dati raddoppia ogni anno — le risorse umane no</span></div>
+    </div>
+    <div class="bullet-item">
+      <div class="bullet-icon">❌</div>
+      <div class="bullet-content"><strong>Black box</strong><span>Nessuna spiegazione comprensibile per il compliance officer o per il regolatore</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4 — La soluzione -->
+<div class="slide" style="background:#0a0a0a;gap:30px;">
+  <div class="slide-label">PARTE 1 — LA SOLUZIONE</div>
+  <div class="slide-title">La nostra risposta: 5 agenti AI su IBM Cloud</div>
+  <div class="arch-box">
+    <span style="color:#525252">Account ID  →  </span><span class="hl">IBM watsonx Orchestrate</span><span style="color:#525252">  →  Report strutturato</span><br><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="hl2">Transaction Analysis Agent</span> &nbsp;— fan-out, smurfing, circular<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="hl2">Risk Assessment Agent</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— score 0–1 su 5 fattori<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="hl2">Fraud Detection Agent</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— anomalie temporali e storia<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="hl2">Recommendation Agent</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— ALERT / REVIEW / BLOCK / MONITOR<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="hl2">Explanation Agent</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— <span class="hl">IBM Granite</span> → linguaggio naturale
+  </div>
+  <div class="kpi-row">
+    <div class="kpi-small"><div class="big">🚀 &lt; 3s</div><div class="small">Analisi completa per account</div></div>
+    <div class="kpi-small"><div class="big">🎯 95%+</div><div class="small">Accuratezza rilevamento AML</div></div>
+    <div class="kpi-small"><div class="big">📋 Auditable</div><div class="small">IBM watsonx.governance integrato</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     PARTE 2 — ARCHITETTURA
+══════════════════════════════════════════════════════ -->
+
+<!-- SLIDE 5 — Divider Parte 2 -->
+<div class="slide slide-divider">
+  <div class="part-num">2</div>
+  <h2>L'Architettura della Soluzione</h2>
+  <p>Come è costruito il sistema — stack IBM, flusso dati, componenti</p>
+</div>
+
+<!-- SLIDE 6 — Architettura High-Level (flusso verticale) -->
+<div class="slide" style="background:#0d0d0d;gap:16px;">
+  <div class="slide-label">PARTE 2 — ARCHITETTURA</div>
+  <div class="slide-title">Architettura High-Level — IBM Cloud eu-de</div>
+
+  <div style="display:flex;align-items:stretch;gap:40px;flex:1;">
+
+    <!-- Colonna sinistra: flusso verticale -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0;flex:1;">
+
+      <!-- Orchestrate -->
+      <div style="background:#0f1f3d;border:2px solid #0f62fe;border-radius:10px;padding:14px 24px;text-align:center;width:100%;max-width:380px;">
+        <div style="font-size:11px;color:#0f62fe;font-weight:700;letter-spacing:1px;">IBM watsonx Orchestrate</div>
+        <div style="font-size:14px;color:#fff;margin-top:3px;font-weight:600;">financial_risk_orchestrator</div>
+        <div style="font-size:11px;color:#525252;margin-top:2px;">granite-3-8b-instruct · eu-de</div>
+      </div>
+      <!-- Freccia -->
+      <div style="display:flex;flex-direction:column;align-items:center;padding:4px 0;">
+        <div style="width:2px;height:10px;background:#42be65;"></div>
+        <div style="font-size:10px;color:#42be65;font-weight:600;">MCP / SSE</div>
+        <div style="width:2px;height:10px;background:#42be65;"></div>
+        <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #42be65;"></div>
+      </div>
+
+      <!-- MCP Server -->
+      <div style="background:#0d1f12;border:2px solid #42be65;border-radius:10px;padding:14px 24px;text-align:center;width:100%;max-width:380px;">
+        <div style="font-size:11px;color:#42be65;font-weight:700;letter-spacing:1px;">MCP Server — Code Engine</div>
+        <div style="font-size:14px;color:#fff;margin-top:3px;font-weight:600;">5 MCP tools · port 8080</div>
+        <div style="font-size:11px;color:#525252;margin-top:2px;">proxy HTTP verso FastAPI</div>
+      </div>
+      <!-- Freccia -->
+      <div style="display:flex;flex-direction:column;align-items:center;padding:4px 0;">
+        <div style="width:2px;height:10px;background:#a8b2c1;"></div>
+        <div style="font-size:10px;color:#a8b2c1;font-weight:600;">REST</div>
+        <div style="width:2px;height:10px;background:#a8b2c1;"></div>
+        <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #a8b2c1;"></div>
+      </div>
+
+      <!-- FastAPI -->
+      <div style="background:#1c1c1c;border:2px solid #393939;border-radius:10px;padding:14px 24px;text-align:center;width:100%;max-width:380px;">
+        <div style="font-size:11px;color:#a8b2c1;font-weight:700;letter-spacing:1px;">FastAPI — Code Engine · port 8000</div>
+        <div style="font-size:14px;color:#fff;margin-top:3px;font-weight:600;">Financial Risk API</div>
+        <div style="font-size:11px;color:#525252;margin-top:2px;">Python 3.11 · Docker · min=1 max=1</div>
+      </div>
+      <!-- Freccia -->
+      <div style="display:flex;flex-direction:column;align-items:center;padding:4px 0;">
+        <div style="width:2px;height:10px;background:#393939;"></div>
+        <div style="font-size:10px;color:#525252;font-weight:600;">5 agenti</div>
+        <div style="width:2px;height:10px;background:#393939;"></div>
+        <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid #393939;"></div>
+      </div>
+
+      <!-- Data layer -->
+      <div style="background:#1c1c1c;border:1px solid #262626;border-radius:10px;padding:12px 24px;text-align:center;width:100%;max-width:380px;">
+        <div style="font-size:11px;color:#525252;font-weight:700;letter-spacing:1px;">IBM Synthetic Data Sets</div>
+        <div style="font-size:13px;color:#a8b2c1;margin-top:2px;">28.374 transazioni · flag laundering certificati</div>
+      </div>
+
+    </div>
+
+    <!-- Divider verticale -->
+    <div style="width:1px;background:#262626;align-self:stretch;"></div>
+
+    <!-- Colonna destra: servizi IBM collaterali -->
+    <div style="display:flex;flex-direction:column;gap:16px;flex:0 0 260px;justify-content:center;">
+      <div style="font-size:11px;color:#525252;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Servizi IBM collegati</div>
+
+      <div style="background:#1c1c1c;border:1px solid #0f62fe;border-radius:8px;padding:14px 16px;">
+        <div style="font-size:11px;color:#0f62fe;font-weight:700;">IBM watsonx.ai</div>
+        <div style="font-size:13px;color:#fff;margin-top:3px;">ibm/granite-4-h-small</div>
+        <div style="font-size:11px;color:#525252;margin-top:2px;">Explanation Agent · us-south</div>
+      </div>
+
+      <div style="background:#1c1c1c;border:1px solid #0f62fe;border-radius:8px;padding:14px 16px;">
+        <div style="font-size:11px;color:#0f62fe;font-weight:700;">IBM watsonx.governance</div>
+        <div style="font-size:13px;color:#fff;margin-top:3px;">AI Factsheet · Audit Trail</div>
+        <div style="font-size:11px;color:#525252;margin-top:2px;">EU AI Act · 6AMLD · eu-de</div>
+      </div>
+
+      <div style="background:#1c1c1c;border:1px solid #262626;border-radius:8px;padding:14px 16px;">
+        <div style="font-size:11px;color:#525252;font-weight:700;">IBM Container Registry</div>
+        <div style="font-size:13px;color:#a8b2c1;margin-top:3px;">Images Docker · private.de.icr.io</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SLIDE 7 (ex-6) — Stack IBM Cloud -->
+<div class="slide" style="background:#161616;gap:28px;">
+  <div class="slide-label">PARTE 2 — ARCHITETTURA</div>
+  <div class="slide-title">Stack IBM Cloud — eu-de (Frankfurt)</div>
+  <div class="ibm-stack">
+    <div class="ibm-card">
+      <div class="ibm-logo">🔄</div>
+      <div class="ibm-name">watsonx Orchestrate</div>
+      <div class="ibm-role">Orchestratore intelligente del workflow multi-agente. Pianifica la sequenza degli agenti e consolida il report finale.</div>
+      <div class="ibm-detail">Instance: wxo-675000bo4y · eu-de</div>
+    </div>
+    <div class="ibm-card">
+      <div class="ibm-logo">🧠</div>
+      <div class="ibm-name">watsonx.ai Granite</div>
+      <div class="ibm-role">LLM enterprise per spiegazioni in linguaggio naturale. Traduce il risk score in testo comprensibile per il compliance officer.</div>
+      <div class="ibm-detail">ibm/granite-4-h-small · us-south</div>
+    </div>
+    <div class="ibm-card">
+      <div class="ibm-logo">🛡️</div>
+      <div class="ibm-name">watsonx.governance</div>
+      <div class="ibm-role">Audit trail automatico di ogni inferenza AI. AI Factsheet, Use Case registrato, conforme EU AI Act e 6AMLD.</div>
+      <div class="ibm-detail">Instance: bc2c304b · eu-de</div>
+    </div>
+    <div class="ibm-card">
+      <div class="ibm-logo">☁️</div>
+      <div class="ibm-name">Code Engine — API</div>
+      <div class="ibm-role">FastAPI containerizzata con i 5 agenti specializzati. Istanza fissa per la demo (no cold start).</div>
+      <div class="ibm-detail">Port 8000 · min=1 max=1 · eu-de</div>
+    </div>
+    <div class="ibm-card">
+      <div class="ibm-logo">🔌</div>
+      <div class="ibm-name">Code Engine — MCP Server</div>
+      <div class="ibm-role">Proxy MCP che espone i 5 endpoint come MCP tools per watsonx Orchestrate. Protocollo SSE.</div>
+      <div class="ibm-detail">Port 8080 · 5 MCP tools · eu-de</div>
+    </div>
+    <div class="ibm-card">
+      <div class="ibm-logo">📊</div>
+      <div class="ibm-name">IBM Synthetic Data Sets</div>
+      <div class="ibm-role">28.374+ transazioni realistiche con flag laundering certificati — dataset ufficiale IBM per analisi AML.</div>
+      <div class="ibm-detail">HI-Small_Trans · CSV · 2.5MB</div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 7 — 5 Agenti -->
+<div class="slide" style="background:#161616;gap:28px;">
+  <div class="slide-label">PARTE 2 — ARCHITETTURA</div>
+  <div class="slide-title">I 5 Agenti Specializzati</div>
+  <div class="agents-grid">
+    <div class="agent-card">
+      <div class="agent-num">AGENTE 01</div>
+      <div class="agent-name">Transaction Analysis</div>
+      <div class="agent-desc">Rileva pattern AML: fan-out, fan-in, circular flow, smurfing. Analizza la rete di destinatari.</div>
+      <div class="agent-output">→ patterns_detected</div>
+    </div>
+    <div class="agent-card">
+      <div class="agent-num">AGENTE 02</div>
+      <div class="agent-name">Risk Assessment</div>
+      <div class="agent-desc">Calcola risk score 0–1 pesando 5 fattori: volume, frequenza, pattern, valori alti, età conto.</div>
+      <div class="agent-output">→ risk_score, risk_level</div>
+    </div>
+    <div class="agent-card">
+      <div class="agent-num">AGENTE 03</div>
+      <div class="agent-name">Fraud Detection</div>
+      <div class="agent-desc">Anomalie temporali, picchi di attività inusuali, storia di laundering dal dataset.</div>
+      <div class="agent-output">→ fraud_signals</div>
+    </div>
+    <div class="agent-card">
+      <div class="agent-num">AGENTE 04</div>
+      <div class="agent-name">Recommendation</div>
+      <div class="agent-desc">Genera azione operativa con priorità: ALERT, REVIEW, BLOCK o MONITOR.</div>
+      <div class="agent-output">→ recommended_actions</div>
+    </div>
+    <div class="agent-card">
+      <div class="agent-num">AGENTE 05</div>
+      <div class="agent-name">Explanation (Granite)</div>
+      <div class="agent-desc">IBM watsonx.ai Granite traduce i risultati tecnici in linguaggio naturale per il compliance officer.</div>
+      <div class="agent-output">→ explanation (NL)</div>
+    </div>
+  </div>
+  <div class="arch-box" style="margin-top:4px;">
+    <span style="color:#525252">Flusso: </span>
+    <span class="hl">Orchestrate</span>
+    <span style="color:#525252"> → </span>
+    <span class="hl3">MCP Server</span>
+    <span style="color:#525252"> → </span>
+    <span class="hl2">assessRisk</span>
+    <span style="color:#525252"> → </span>
+    <span class="hl2">detectFraud ‖ analyzeTransaction</span>
+    <span style="color:#525252"> → </span>
+    <span class="hl2">recommendActions</span>
+    <span style="color:#525252"> → </span>
+    <span class="hl2">explainRisk</span>
+    <span style="color:#525252"> → Report</span>
+  </div>
+</div>
+
+<!-- SLIDE 8 — Governance -->
+<div class="slide" style="background:#161616;gap:30px;">
+  <div class="slide-label">PARTE 2 — ARCHITETTURA</div>
+  <div class="slide-title">IBM watsonx.governance — AI Auditabile</div>
+  <div class="arch-box" style="margin-bottom:4px;">
+    <span style="color:#525252">Ogni chiamata a Granite  →  </span><span class="hl2">GovernanceMonitor.log_risk_assessment()</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="hl3">AI Factsheet</span> &nbsp;&nbsp;— Financial Risk · Granite Explanation Model<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── <span class="hl3">OpenScale payload</span> — prediction + probability + risk_score<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── <span class="hl3">Audit Trail</span> &nbsp;&nbsp;&nbsp;— timestamp, account_id, model, scoring_id
+  </div>
+  <div class="check-grid">
+    <div class="check-item"><div class="ck">✅</div><div class="ck-text"><strong>AI Use Case registrato</strong>Financial Risk Management - AML Detection · Risk: HIGH</div></div>
+    <div class="check-item"><div class="ck">✅</div><div class="ck-text"><strong>AI Factsheet automatica</strong>Ogni inferenza Granite loggata con input, output, timestamp</div></div>
+    <div class="check-item"><div class="ck">✅</div><div class="ck-text"><strong>Conforme EU AI Act</strong>Sistema ad alto rischio — settore finanziario regolamentato</div></div>
+    <div class="check-item"><div class="ck">✅</div><div class="ck-text"><strong>Export CSV per audit</strong>Audit Trail esportabile per autorità di vigilanza (6AMLD)</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     PARTE 6 — CHIUSURA
+══════════════════════════════════════════════════════ -->
+
+<!-- SLIDE 9 — Divider Parte 6 -->
+<div class="slide slide-divider">
+  <div class="part-num">6</div>
+  <h2>Valore di Business</h2>
+  <p>Performance, obiettivi raggiunti e prossimi passi</p>
+</div>
+
+<!-- SLIDE 10 — Metriche e closing -->
+<div class="slide" style="background:#0a0a0a;gap:26px;">
+  <div class="slide-label">PARTE 6 — VALORE DI BUSINESS</div>
+  <div class="slide-title">Cosa abbiamo costruito in 2 settimane</div>
+  <div class="check-grid">
+    <div class="check-item"><div class="ck">🚀</div><div class="ck-text"><strong>&lt; 3 secondi per analisi completa</strong>Da ore di lavoro manuale a meno di 3s, con IBM watsonx Orchestrate</div></div>
+    <div class="check-item"><div class="ck">🎯</div><div class="ck-text"><strong>95%+ accuratezza AML</strong>Rilevamento pattern fan-out, smurfing, circular flow, high-risk currency</div></div>
+    <div class="check-item"><div class="ck">☁️</div><div class="ck-text"><strong>Live su IBM Cloud</strong>Code Engine (eu-de), containerizzato, stabile — pronto ora</div></div>
+    <div class="check-item"><div class="ck">📋</div><div class="ck-text"><strong>Audit trail conforme EU AI Act</strong>watsonx.governance, AI Factsheet, export CSV per le autorità</div></div>
+    <div class="check-item"><div class="ck">🤖</div><div class="ck-text"><strong>IBM Bob come co-developer</strong>Architettura, YAML, deploy, OpenAPI — settimane compresse in giorni</div></div>
+    <div class="check-item"><div class="ck">📈</div><div class="ck-text"><strong>Scalabile e integrabile</strong>REST API standard · OpenAPI spec · pronto per sistemi bancari core</div></div>
+  </div>
+  <div style="text-align:center;color:#525252;font-size:13px;margin-top:8px;">
+    Accenture — IBM Open Agentic Builders Challenge — Demo: 1 Luglio 2026
+  </div>
+</div>
+
+<!-- Nav -->
+<div class="nav">
+  <button onclick="prev()">← Indietro</button>
+  <span class="slide-counter" id="counter">1 / 10</span>
+  <button onclick="next()">Avanti →</button>
+</div>
+<div class="slide-label-bottom" id="partlabel">PARTE 1</div>
+<div class="progress" id="progress"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const partLabels = ['PARTE 1','PARTE 1','PARTE 1','PARTE 1','PARTE 2','PARTE 2','PARTE 2','PARTE 2','PARTE 2','PARTE 6','PARTE 6'];
+  let current = 0;
+
+  function show(n) {
+    slides[current].classList.remove('active');
+    current = Math.max(0, Math.min(n, slides.length - 1));
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + slides.length;
+    document.getElementById('progress').style.width = ((current + 1) / slides.length * 100) + '%';
+    document.getElementById('partlabel').textContent = partLabels[current] || '';
+  }
+
+  function next() { show(current + 1); }
+  function prev() { show(current - 1); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') next();
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prev();
+  });
+</script>
+</body>
+</html>
