@@ -12,6 +12,16 @@ import os
 import sys
 import time
 import requests
+from pathlib import Path
+
+# Carica .env da bobibm/ se IBM_CLOUD_API_KEY non è già settata
+_env_path = Path(__file__).parent.parent / "bobibm" / ".env"
+if _env_path.exists() and not os.environ.get("IBM_CLOUD_API_KEY"):
+    for line in _env_path.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, _, v = line.partition("=")
+            os.environ.setdefault(k.strip(), v.strip())
 
 REGION = "eu-de"
 CE_PROJECT_NAME = "ce-675000bo4y"
@@ -40,12 +50,28 @@ def get_iam_token(api_key: str) -> str:
 def get_project_id(token: str) -> str:
     headers = {"Authorization": f"Bearer {token}"}
     resp = requests.get(f"{CE_API}/projects", headers=headers, timeout=30)
-    resp.raise_for_status()
-    projects = resp.json().get("projects", [])
+    print(f"  API status: {resp.status_code}")
+    if resp.status_code != 200:
+        print(f"  Response: {resp.text}")
+        resp.raise_for_status()
+    data = resp.json()
+    print(f"  Raw response keys: {list(data.keys())}")
+    projects = data.get("projects", [])
+    print(f"  Projects found: {len(projects)}")
     for p in projects:
+        print(f"    - {p.get('name')} / {p.get('id')}")
         if p.get("name") == CE_PROJECT_NAME or p.get("id") == CE_PROJECT_NAME:
             print(f"  Project: {p['name']} (ID: {p['id']})")
             return p["id"]
+    # If empty, maybe the project ID is actually a direct UUID — try it directly
+    print(f"\n  Projects list empty. Trying '{CE_PROJECT_NAME}' as direct project ID...")
+    resp2 = requests.get(f"{CE_API}/projects/{CE_PROJECT_NAME}", headers=headers, timeout=30)
+    print(f"  Direct lookup status: {resp2.status_code}")
+    if resp2.status_code == 200:
+        p = resp2.json()
+        print(f"  Found: {p.get('name')} (ID: {p.get('id')})")
+        return p.get("id", CE_PROJECT_NAME)
+    print(f"  Direct lookup response: {resp2.text[:300]}")
     raise RuntimeError(f"Project '{CE_PROJECT_NAME}' not found. Available: {[p['name'] for p in projects]}")
 
 
@@ -192,6 +218,18 @@ def main():
 
     print("\n[1/5] IAM token...")
     token = get_iam_token(api_key)
+
+    # Debug: mostra quale account IBM Cloud sta usando questa chiave
+    acc_resp = requests.get(
+        "https://iam.cloud.ibm.com/v1/apikeys/details",
+        headers={"Authorization": f"Bearer {token}", "IAM-Apikey": os.environ.get("IBM_CLOUD_API_KEY","")},
+        timeout=15
+    )
+    if acc_resp.status_code == 200:
+        acc = acc_resp.json()
+        print(f"  API key owner: {acc.get('name')} | account: {acc.get('account_id')} | created_by: {acc.get('iam_id')}")
+    else:
+        print(f"  (account info non disponibile: {acc_resp.status_code})")
 
     print("\n[2/5] Code Engine project...")
     project_id = get_project_id(token)
