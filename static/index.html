@@ -426,14 +426,9 @@
                     <canvas id="riskChart"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>📊 Confidence Pattern AML</h3>
-                    <canvas id="levelChart"></canvas>
+                    <h3>📊 Statistiche Transazioni</h3>
+                    <div class="stats-grid" id="txStats" style="margin-top:10px"></div>
                 </div>
-            </div>
-
-            <div class="aml-card">
-                <h3>📊 Statistiche Transazioni</h3>
-                <div class="stats-grid" id="txStats"></div>
             </div>
         </div>
         </div><!-- end tab-analisi -->
@@ -737,7 +732,6 @@
 
             // Charts
             createRiskChart(riskScore);
-            createPatternChart(amlPatterns);
 
             // Explanation
             document.getElementById('explanation').textContent = explainData.explanation || 'Nessuna spiegazione disponibile.';
