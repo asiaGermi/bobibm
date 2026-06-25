@@ -165,19 +165,19 @@ class RecommendationAgent:
             recommendations.append({
                 'action': self.ACTION_BLOCK,
                 'priority': 'critical',
-                'reason': f'Critical risk score of {risk_score:.2f}',
-                'description': 'Freeze account transactions immediately'
+                'reason': f'Punteggio di rischio critico: {risk_score:.2f}',
+                'description': 'Blocco immediato delle transazioni del conto'
             })
-        
+
         # High risk
         elif risk_score >= 0.6:
             recommendations.append({
                 'action': self.ACTION_REVIEW,
                 'priority': 'high',
-                'reason': f'High risk score of {risk_score:.2f}',
-                'description': 'Enhanced due diligence required'
+                'reason': f'Punteggio di rischio elevato: {risk_score:.2f}',
+                'description': 'Richiesta due diligence rafforzata'
             })
-        
+
         # Pattern-specific recommendations
         for pattern in aml_patterns:
             if pattern['pattern_type'] == 'smurfing':
@@ -185,7 +185,7 @@ class RecommendationAgent:
                     'action': self.ACTION_REVIEW,
                     'priority': pattern['severity'],
                     'reason': pattern['description'],
-                    'description': 'Investigate structuring activity'
+                    'description': 'Investigare attività di strutturazione'
                 })
         
         return recommendations

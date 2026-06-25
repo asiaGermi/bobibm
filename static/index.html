@@ -426,7 +426,7 @@
                     <canvas id="riskChart"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>📊 Profilo Transazioni</h3>
+                    <h3>📊 Confidence Pattern AML</h3>
                     <canvas id="levelChart"></canvas>
                 </div>
             </div>
@@ -737,7 +737,7 @@
 
             // Charts
             createRiskChart(riskScore);
-            createLevelChart(txStats);
+            createPatternChart(amlPatterns);
 
             // Explanation
             document.getElementById('explanation').textContent = explainData.explanation || 'Nessuna spiegazione disponibile.';
@@ -787,19 +787,30 @@
             });
         }
 
-        function createLevelChart(txStats) {
+        function createPatternChart(amlPatterns) {
             if (levelChart) levelChart.destroy();
-            const fmt = (n) => n != null ? Number(n).toLocaleString('it-IT', { maximumFractionDigits: 0 }) : '0';
-            const txCount = txStats.total_transactions ?? 0;
-            const avgAmt = txStats.avg_transaction_amount ?? 0;
-            const maxAmt = txStats.max_transaction ?? 0;
-            levelChart = new Chart(document.getElementById('levelChart'), {
+            const el = document.getElementById('levelChart');
+            if (!amlPatterns || amlPatterns.length === 0) {
+                el.style.display = 'none';
+                el.parentElement.querySelector('h3').textContent = '✅ Confidence Pattern AML';
+                el.insertAdjacentHTML('afterend', '<p id="noPatternMsg" style="color:#28a745;text-align:center;padding:40px 0;font-weight:500">Nessun pattern AML rilevato</p>');
+                return;
+            }
+            document.getElementById('noPatternMsg')?.remove();
+            el.style.display = '';
+            const labels = amlPatterns.map(p => p.pattern_type?.toUpperCase() ?? 'UNKNOWN');
+            const data = amlPatterns.map(p => p.confidence != null ? p.confidence * 100 : 100);
+            const colors = amlPatterns.map(p => {
+                const c = p.confidence ?? 1;
+                return c >= 0.9 ? '#dc3545' : c >= 0.7 ? '#fd7e14' : '#ffc107';
+            });
+            levelChart = new Chart(el, {
                 type: 'bar',
                 data: {
-                    labels: ['Transazioni', 'Media ($)', 'Max ($)'],
+                    labels,
                     datasets: [{
-                        data: [txCount, avgAmt, maxAmt],
-                        backgroundColor: ['#667eea', '#764ba2', '#dc3545'],
+                        data,
+                        backgroundColor: colors,
                         borderWidth: 0,
                         borderRadius: 8
                     }]
@@ -808,10 +819,10 @@
                     responsive: true,
                     plugins: {
                         legend: { display: false },
-                        tooltip: { callbacks: { label: (c) => fmt(c.parsed.y) } }
+                        tooltip: { callbacks: { label: (c) => c.parsed.y.toFixed(0) + '% confidenza' } }
                     },
                     scales: {
-                        y: { beginAtZero: true, ticks: { callback: v => Number(v).toLocaleString('it-IT') } }
+                        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }
                     }
                 }
             });
