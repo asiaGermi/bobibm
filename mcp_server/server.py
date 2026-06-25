@@ -1,22 +1,14 @@
 """
 MCP Server for Financial Risk Management API
-FastMCP with streamable-http transport for IBM watsonx Orchestrate integration.
+FastMCP with streamable-http transport + /health endpoint.
 
-Tools:
-- analyzeTransaction: anomaly detection + AML pattern analysis
-- assessRisk: risk score (0-1) + level + patterns
-- detectFraud: fraud signals + anomaly score
-- recommendActions: ALERT/BLOCK/REVIEW/MONITOR
-- explainRisk: natural language explanation via IBM Granite
+Uses a raw ASGI wrapper to combine the FastMCP app (which requires lifespan
+initialization for its StreamableHTTPSessionManager) with a /health route.
 """
 import os
-import uvicorn
+import json
 import httpx
 from mcp.server.fastmcp import FastMCP
-from starlette.applications import Starlette
-from starlette.routing import Route, Mount
-from starlette.responses import JSONResponse
-from starlette.requests import Request
 
 API_BASE_URL = os.environ.get(
     "API_BASE_URL",
@@ -73,20 +65,33 @@ async def explain_risk(account_id: str, risk_score: float, risk_level: str) -> s
     })
 
 
-async def handle_health(request: Request) -> JSONResponse:
-    return JSONResponse({"status": "ok", "service": "financial-risk-mcp", "tools": 5})
+# --- Raw ASGI wrapper ---
+
+_mcp_asgi = mcp.streamable_http_app()
+_health_body = json.dumps({"status": "ok", "service": "financial-risk-mcp", "tools": 5}).encode()
+
+
+async def _send_health(send):
+    await send({"type": "http.response.start", "status": 200, "headers": [
+        (b"content-type", b"application/json"),
+        (b"content-length", str(len(_health_body)).encode()),
+    ]})
+    await send({"type": "http.response.body", "body": _health_body})
+
+
+async def app(scope, receive, send):
+    if scope["type"] == "lifespan":
+        # Delegate lifespan to MCP app so its StreamableHTTPSessionManager initializes
+        await _mcp_asgi(scope, receive, send)
+    elif scope["type"] == "http" and scope.get("path") == "/health":
+        await _send_health(send)
+    else:
+        await _mcp_asgi(scope, receive, send)
 
 
 if __name__ == "__main__":
-    # streamable_http_app() returns a Starlette app with the MCP endpoint at /mcp
-    mcp_asgi = mcp.streamable_http_app()
-
-    app = Starlette(routes=[
-        Route("/health", handle_health),
-        Mount("/", app=mcp_asgi),
-    ])
-
+    import uvicorn
     port = int(os.environ.get("PORT", "8080"))
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+    uvicorn.run("server:app", host="0.0.0.0", port=port, log_level="info")
 
 # Made with Bob
