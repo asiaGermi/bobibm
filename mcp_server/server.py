@@ -15,7 +15,9 @@ API_BASE_URL = os.environ.get(
     "https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud"
 )
 
-mcp = FastMCP("financial-risk-mcp")
+# host="0.0.0.0" prevents FastMCP from auto-enabling DNS rebinding protection
+# (which would block Code Engine's external hostname in Host header)
+mcp = FastMCP("financial-risk-mcp", host="0.0.0.0")
 
 
 async def call_api(endpoint: str, payload: dict) -> str:
