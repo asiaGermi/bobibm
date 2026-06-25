@@ -385,10 +385,8 @@ async def run_sse_server():
 
     sse = SseServerTransport("/messages/")
 
-    async def handle_sse(request: Request):
-        async with sse.connect_sse(
-            request.scope, request.receive, request._send,
-        ) as streams:
+    async def handle_sse(scope, receive, send):
+        async with sse.connect_sse(scope, receive, send) as streams:
             await app.run(streams[0], streams[1], app.create_initialization_options())
 
     async def handle_health(request: Request):
@@ -396,7 +394,7 @@ async def run_sse_server():
 
     starlette_app = Starlette(routes=[
         Route("/health", handle_health),
-        Route("/sse", handle_sse),
+        Mount("/sse", app=handle_sse),
         Mount("/messages/", app=sse.handle_post_message),
     ])
 
