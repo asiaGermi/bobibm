@@ -115,20 +115,28 @@ def calculate_risk_score(
         
         # Factor 4: Historical laundering flags (most important)
         laundering_risk = stats['laundering_percentage'] / 100.0
-        
+
         # Factor 5: Network complexity risk
         # Many unique counterparties can indicate layering
         network_risk = min(stats['unique_counterparties'] / 50.0, 1.0)
-        
+
+        # Bonus: 100% high-risk currency + extreme fan-out is a strong
+        # laundering signal even without explicit dataset flags (e.g. Bitcoin
+        # dispersed to 1000+ recipients). Capped at 0.15 additional points.
+        crypto_fanout_bonus = 0.0
+        if currency_risk == 1.0 and stats['unique_counterparties'] > 200:
+            crypto_fanout_bonus = min((stats['unique_counterparties'] - 200) / 1000.0, 0.15)
+
         # Calculate weighted risk score
         risk_score = (
             RISK_WEIGHTS['transaction_frequency'] * frequency_risk +
             RISK_WEIGHTS['amount_anomaly'] * amount_risk +
             RISK_WEIGHTS['high_risk_currency'] * currency_risk +
             RISK_WEIGHTS['laundering_history'] * laundering_risk +
-            RISK_WEIGHTS['network_complexity'] * network_risk
+            RISK_WEIGHTS['network_complexity'] * network_risk +
+            crypto_fanout_bonus
         )
-        
+
         return min(max(risk_score, 0.0), 1.0)  # Ensure 0.0-1.0 range
         
     except Exception as e:
