@@ -269,25 +269,25 @@ class ExplanationAgent:
                 rec_list.append(f"- {action} (priority: {priority}): {description}")
             recommendations_text = "\n".join(rec_list)
         
-        prompt = f"""You are a financial compliance expert. Explain the following risk assessment results to a compliance officer in clear, professional English.
+        prompt = f"""Sei un esperto di compliance finanziaria AML. Genera una spiegazione professionale e diretta dei seguenti risultati di risk assessment per un compliance officer bancario. Rispondi sempre in italiano.
 
 Account ID: {account_id}
-Risk Score: {risk_score:.4f} (scale: 0.0-1.0)
+Risk Score: {risk_score:.4f} (scala: 0.0-1.0)
 Risk Level: {risk_level.upper()}
 
-Detected AML Patterns:
+Pattern AML Rilevati:
 {patterns_text}
 
-Recommended Actions:
+Azioni Raccomandate:
 {recommendations_text}
 
-Provide a concise explanation (3-5 sentences) that:
-1. Summarizes the overall risk level and what it means
-2. Highlights the most critical findings or patterns
-3. Explains why the recommended actions are necessary
-4. Uses professional but accessible language for compliance officers
+Genera una spiegazione concisa (3-4 frasi) che:
+1. Valuta il livello di rischio in modo diretto e assertivo
+2. Evidenzia il pattern critico rilevato e le sue implicazioni operative
+3. Indica chiaramente le azioni necessarie per il compliance officer
+4. Usa linguaggio professionale e diretto, senza ambiguità
 
-Explanation:"""
+Risposta in italiano:"""
         
         return prompt
     
