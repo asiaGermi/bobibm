@@ -9,5 +9,5 @@ https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/dashboa
 
 https://cloud.ibm.com/containers/registry/images : deploy
 
-MCP Server (SSE): https://financial-risk-mcp.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/sse
-MCP Health:       https://financial-risk-mcp.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/health
+MCP Server (streamable-http): https://financial-risk-mcp.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/mcp
+MCP Health:                   https://financial-risk-mcp.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/health

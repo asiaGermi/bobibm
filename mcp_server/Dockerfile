@@ -30,7 +30,6 @@ USER mcpuser
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    MCP_TRANSPORT=sse \
     PORT=8080
 
 EXPOSE 8080
