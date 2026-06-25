@@ -1,3 +1,13 @@
 watsonx.governance.: https://eu-de.dataplatform.cloud.ibm.com/aigov/modelinventory/aiusecases
 
 watsonx.ai: https://eu-de.dataplatform.cloud.ibm.com/wx/home?context=wx
+
+
+
+https://financial-risk-api.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/dashboard
+
+
+https://cloud.ibm.com/containers/registry/images : deploy
+
+MCP Server (SSE): https://financial-risk-mcp.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/sse
+MCP Health:       https://financial-risk-mcp.2b4ptlu9b878.eu-de.codeengine.appdomain.cloud/health

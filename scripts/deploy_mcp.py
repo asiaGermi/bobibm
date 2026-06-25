@@ -14,8 +14,8 @@ import time
 import requests
 from pathlib import Path
 
-# Carica .env da bobibm/ se IBM_CLOUD_API_KEY non è già settata
-_env_path = Path(__file__).parent.parent / "bobibm" / ".env"
+# Carica .env dalla root del progetto se IBM_CLOUD_API_KEY non è già settata
+_env_path = Path(__file__).parent.parent / ".env"
 if _env_path.exists() and not os.environ.get("IBM_CLOUD_API_KEY"):
     for line in _env_path.read_text().splitlines():
         line = line.strip()
