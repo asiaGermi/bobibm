@@ -414,11 +414,11 @@
 
             <div class="charts-grid">
                 <div class="chart-card">
-                    <h3>📈 Risk Score Distribution</h3>
+                    <h3>📈 Risk Score</h3>
                     <canvas id="riskChart"></canvas>
                 </div>
                 <div class="chart-card">
-                    <h3>🎯 Risk Level Breakdown</h3>
+                    <h3>📊 Profilo Transazioni</h3>
                     <canvas id="levelChart"></canvas>
                 </div>
             </div>
@@ -729,7 +729,7 @@
 
             // Charts
             createRiskChart(riskScore);
-            createLevelChart(riskLevel);
+            createLevelChart(txStats);
 
             // Explanation
             document.getElementById('explanation').textContent = explainData.explanation || 'Nessuna spiegazione disponibile.';
@@ -742,46 +742,68 @@
 
         function createRiskChart(riskScore) {
             if (riskChart) riskChart.destroy();
+            const pct = (riskScore * 100).toFixed(1);
+            const color = getRiskColor(riskScore);
             riskChart = new Chart(document.getElementById('riskChart'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Risk Score', 'Safe Zone'],
                     datasets: [{
-                        data: [riskScore * 100, (1 - riskScore) * 100],
-                        backgroundColor: [getRiskColor(riskScore), '#e0e0e0'],
-                        borderWidth: 0
+                        data: [riskScore * 100, 100 - riskScore * 100],
+                        backgroundColor: [color, '#f0f0f0'],
+                        borderWidth: 0,
+                        circumference: 180,
+                        rotation: -90,
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { padding: 20, font: { size: 13 } } },
-                        tooltip: { callbacks: { label: (c) => c.label + ': ' + c.parsed.toFixed(1) + '%' } }
+                    cutout: '72%',
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                },
+                plugins: [{
+                    id: 'gaugeCenter',
+                    afterDraw(chart) {
+                        const { ctx, chartArea: { left, right, bottom } } = chart;
+                        const cx = (left + right) / 2;
+                        ctx.save();
+                        ctx.textAlign = 'center';
+                        ctx.font = 'bold 32px IBM Plex Sans, sans-serif';
+                        ctx.fillStyle = color;
+                        ctx.fillText(pct + '%', cx, bottom - 18);
+                        ctx.font = '13px IBM Plex Sans, sans-serif';
+                        ctx.fillStyle = '#888';
+                        ctx.fillText(getRiskDescription(riskScore), cx, bottom + 4);
+                        ctx.restore();
                     }
-                }
+                }]
             });
         }
 
-        function createLevelChart(riskLevel) {
+        function createLevelChart(txStats) {
             if (levelChart) levelChart.destroy();
-            const levels = ['low', 'medium', 'high', 'critical'];
+            const fmt = (n) => n != null ? Number(n).toLocaleString('it-IT', { maximumFractionDigits: 0 }) : '0';
+            const txCount = txStats.total_transactions ?? 0;
+            const avgAmt = txStats.avg_transaction_amount ?? 0;
+            const maxAmt = txStats.max_transaction ?? 0;
             levelChart = new Chart(document.getElementById('levelChart'), {
                 type: 'bar',
                 data: {
-                    labels: ['Low', 'Medium', 'High', 'Critical'],
+                    labels: ['Transazioni', 'Media ($)', 'Max ($)'],
                     datasets: [{
-                        label: 'Risk Level',
-                        data: levels.map(l => l === riskLevel ? 100 : 0),
-                        backgroundColor: levels.map(l => l === riskLevel ? getLevelColor(l) : '#e0e0e0'),
+                        data: [txCount, avgAmt, maxAmt],
+                        backgroundColor: ['#667eea', '#764ba2', '#dc3545'],
                         borderWidth: 0,
                         borderRadius: 8
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: false } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (c) => fmt(c.parsed.y) } }
+                    },
                     scales: {
-                        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }
+                        y: { beginAtZero: true, ticks: { callback: v => Number(v).toLocaleString('it-IT') } }
                     }
                 }
             });
